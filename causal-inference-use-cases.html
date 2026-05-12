@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Causal Inference Use Cases</title>
+<style>
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.55;max-width:52rem;margin:2rem auto;padding:0 1.25rem;color:#1a1a1a;}
+h1,h2,h3,h4{border-bottom:1px solid #eee;padding-bottom:.2em;margin-top:1.4em;}
+code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em;}
+pre{background:#f6f8fa;padding:1rem;border-radius:8px;overflow-x:auto;border:1px solid #e1e4e8;}
+table{border-collapse:collapse;width:100%;margin:1rem 0;font-size:.95em;}
+th,td{border:1px solid #ddd;padding:.45rem .6rem;text-align:left;}
+th{background:#f0f0f0;}
+blockquote{border-left:4px solid #ccc;margin:1rem 0;padding-left:1rem;color:#444;}
+a{color:#0969da;}
+hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
+</style>
+</head>
+<body>
+<h1>Causal Inference -- Detailed Use Cases</h1>
+<p>Each use case below follows a structured template covering the full end-to-end workflow: business problem, causal framing, data requirements, methodology, implementation steps, interpretation, and pitfalls.</p>
+<hr />
+<h2>Table of Contents</h2>
+<ol>
+<li><a href="#use-case-1-subscription-impact-on-revenue">Subscription Impact on Revenue (Propensity Score Matching)</a></li>
+<li><a href="#use-case-2-feature-launch-impact-on-engagement">Feature Launch Impact on Engagement (Difference-in-Differences)</a></li>
+<li><a href="#use-case-3-game-title-release-into-game-pass">Game Title Release into Game Pass (DiD + Matching)</a></li>
+<li><a href="#use-case-4-geo-level-personalization-launch">Geo-Level Personalization Launch (Synthetic Control)</a></li>
+<li><a href="#use-case-5-marketing-campaign-impact">Marketing Campaign Impact (Interrupted Time Series)</a></li>
+<li><a href="#use-case-6-discount-redemption-with-non-compliance">Discount Redemption with Non-Compliance (Instrumental Variables)</a></li>
+<li><a href="#use-case-7-loyalty-tier-threshold-effect">Loyalty Tier Threshold Effect (Regression Discontinuity)</a></li>
+<li><a href="#use-case-8-personalized-offer-optimization">Personalized Offer Optimization (HTE + Uplift)</a></li>
+<li><a href="#use-case-9-game-pass-free-trial-with-non-compliance">Game Pass Free Trial with Non-Compliance (CACE)</a></li>
+<li><a href="#use-case-10-churn-driver-analysis">Churn Driver Analysis (Causal Feature Attribution)</a></li>
+<li><a href="#use-case-11-regional-pricing-change">Regional Pricing Change (Synthetic Control)</a></li>
+<li><a href="#use-case-12-marketing-spend-optimization">Marketing Spend Optimization (Uplift Modeling)</a></li>
+</ol>
+<hr />
+<h2>Use Case 1: Subscription Impact on Revenue</h2>
+<p><strong>Method</strong>: Propensity Score Matching (PSM)</p>
+<h3>Business Problem</h3>
+<p>A gaming platform offers a subscription service (e.g., Game Pass). The business wants to know: <strong>Does subscribing to Game Pass causally increase a user's total revenue contribution, or do high-revenue users simply self-select into the subscription?</strong></p>
+<h3>Causal Framing</h3>
+<ul>
+<li><strong>Treatment (T)</strong>: User subscribes to Game Pass</li>
+<li><strong>Outcome (Y)</strong>: Total revenue contribution over the next 6 months (subscriptions + in-game purchases + DLC)</li>
+<li><strong>Confounders (X)</strong>: Pre-subscription engagement (hours played, titles owned, purchase history), demographics (age, region), platform tenure, device type</li>
+<li><strong>Counterfactual question</strong>: What would the subscriber's revenue have been if they had NOT subscribed?</li>
+</ul>
+<h3>Why We Can't Just Compare Means</h3>
+<p>Simply comparing revenue of subscribers vs. non-subscribers would be misleading because subscribers are likely already more engaged and higher-spending. The difference in revenue would reflect both the treatment effect AND the pre-existing differences.</p>
+<h3>Data Requirements</h3>
+<table>
+<thead>
+<tr>
+<th>Data Element</th>
+<th>Source</th>
+<th>Granularity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Subscription status and date</td>
+<td>Billing system</td>
+<td>User-level</td>
+</tr>
+<tr>
+<td>Revenue (pre and post)</td>
+<td>Transaction logs</td>
+<td>User x month</td>
+</tr>
+<tr>
+<td>Hours played, titles played</td>
+<td>Telemetry</td>
+<td>User x month</td>
+</tr>
+<tr>
+<td>Purchase history</td>
+<td>Store transactions</td>
+<td>User x month</td>
+</tr>
+<tr>
+<td>Demographics</td>
+<td>Account profiles</td>
+<td>User-level</td>
+</tr>
+<tr>
+<td>Platform tenure</td>
+<td>Account creation date</td>
+<td>User-level</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Pre-period</strong>: 6 months of behavioral data before subscription date</li>
+<li><strong>Post-period</strong>: 6 months of revenue data after subscription date</li>
+<li><strong>Sample</strong>: All users who subscribed in a given month (treated) + all non-subscribers active in that month (control pool)</li>
+</ul>
+<h3>Methodology Steps</h3>
+<p><strong>Step 1: Define the treatment window</strong><br />
+- Pick a cohort: users who subscribed in March 2025<br />
+- Pre-period: September 2024 -- February 2025<br />
+- Post-period: March 2025 -- August 2025</p>
+<p><strong>Step 2: Engineer pre-treatment features</strong><br />
+- Average monthly hours played (pre-period)<br />
+- Number of unique titles played (pre-period)<br />
+- Total spending in pre-period<br />
+- Days since account creation<br />
+- Number of multiplayer sessions<br />
+- Region, age group, device type</p>
+<p><strong>Step 3: Estimate propensity scores</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.linear_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogisticRegression</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.calibration</span><span class="w"> </span><span class="kn">import</span> <span class="n">CalibratedClassifierCV</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">LogisticRegression</span><span class="p">(</span><span class="n">max_iter</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
+<span class="n">calibrated</span> <span class="o">=</span> <span class="n">CalibratedClassifierCV</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;isotonic&#39;</span><span class="p">)</span>
+<span class="n">calibrated</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_pre_features</span><span class="p">,</span> <span class="n">treatment_indicator</span><span class="p">)</span>
+<span class="n">propensity_scores</span> <span class="o">=</span> <span class="n">calibrated</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">X_pre_features</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">]</span>
+</code></pre></div>
+
+<p><strong>Step 4: Check common support</strong><br />
+- Plot propensity score distributions for treated and control<br />
+- Trim units outside the overlapping region (e.g., drop treated users with scores &gt; 0.95 and control users with scores &lt; 0.05)</p>
+<p><strong>Step 5: Perform matching</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.neighbors</span><span class="w"> </span><span class="kn">import</span> <span class="n">NearestNeighbors</span>
+
+<span class="n">nn</span> <span class="o">=</span> <span class="n">NearestNeighbors</span><span class="p">(</span><span class="n">n_neighbors</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="s1">&#39;euclidean&#39;</span><span class="p">)</span>
+<span class="n">nn</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">propensity_scores</span><span class="p">[</span><span class="n">control_idx</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+<span class="n">distances</span><span class="p">,</span> <span class="n">indices</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">kneighbors</span><span class="p">(</span><span class="n">propensity_scores</span><span class="p">[</span><span class="n">treated_idx</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+</code></pre></div>
+
+<ul>
+<li>Apply a caliper (e.g., 0.05) to discard poor matches</li>
+</ul>
+<p><strong>Step 6: Check balance</strong><br />
+- Compute standardized mean differences (SMD) for every covariate before and after matching<br />
+- Target: all SMD &lt; 0.1 after matching<br />
+- Visualize with Love plots or density comparisons</p>
+<p><strong>Step 7: Estimate the treatment effect</strong><br />
+- ATT (Average Treatment Effect on the Treated) = mean(Y_treated_post) - mean(Y_matched_control_post)<br />
+- Use bootstrap or Abadie-Imbens standard errors for inference</p>
+<h3>Interpretation</h3>
+<ul>
+<li>"After matching subscribers to non-subscribers with similar pre-period behavior, subscribers generated $12.40 more revenue per month on average (p &lt; 0.01). This suggests that Game Pass causally increases revenue contribution, beyond what would be expected from pre-existing engagement patterns."</li>
+</ul>
+<h3>Pitfalls</h3>
+<ul>
+<li>If propensity scores are poorly calibrated, matches will be poor even if they look close numerically</li>
+<li>Unobserved confounders (e.g., "intent to spend" that isn't captured in behavioral data) can still bias results</li>
+<li>Heavy trimming of non-overlapping regions may limit generalizability</li>
+<li>Sample may shrink substantially (e.g., 50,000 treated users down to 35,000 after matching)</li>
+</ul>
+<hr />
+<h2>Use Case 2: Feature Launch Impact on Engagement</h2>
+<p><strong>Method</strong>: Difference-in-Differences (DiD)</p>
+<h3>Business Problem</h3>
+<p>A product team launches a new recommendation feature on a platform. The question: <strong>Did this feature causally increase monthly active users (MAU), or was the increase driven by other factors (seasonality, marketing, organic growth)?</strong></p>
+<h3>Causal Framing</h3>
+<ul>
+<li><strong>Treatment (T)</strong>: Exposure to the new recommendation feature</li>
+<li><strong>Outcome (Y)</strong>: Monthly active usage (days active per month)</li>
+<li><strong>Treatment group</strong>: Users who were exposed to the feature (e.g., gradual rollout by region or user segment)</li>
+<li><strong>Control group</strong>: Users not yet exposed</li>
+<li><strong>Key assumption</strong>: Parallel trends -- in the absence of the feature, both groups would have followed the same trajectory</li>
+</ul>
+<h3>Data Requirements</h3>
+<table>
+<thead>
+<tr>
+<th>Data Element</th>
+<th>Source</th>
+<th>Granularity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Feature exposure flag and date</td>
+<td>Feature flag system</td>
+<td>User-level</td>
+</tr>
+<tr>
+<td>Daily/monthly active usage</td>
+<td>Telemetry</td>
+<td>User x day/month</td>
+</tr>
+<tr>
+<td>User segment, region</td>
+<td>Account data</td>
+<td>User-level</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>At least 3-6 months of pre-launch data to verify parallel trends</li>
+<li>At least 1-3 months of post-launch data</li>
+</ul>
+<h3>Methodology Steps</h3>
+<p><strong>Step 1: Define groups and time periods</strong><br />
+- Treated: Users in regions/segments that received the feature on launch date<br />
+- Control: Users in regions/segments that have not yet received it<br />
+- Pre-period: 6 months before launch<br />
+- Post-period: 3 months after launch</p>
+<p><strong>Step 2: Verify parallel trends</strong><br />
+- Plot average monthly active days for treated and control groups across the pre-period<br />
+- Formally test: run event-study regression with leads (pre-treatment period dummies interacted with treatment indicator). All pre-treatment interaction coefficients should be statistically insignificant.</p>
+<p><strong>Step 3: Estimate DiD</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">statsmodels.formula.api</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">smf</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span>
+    <span class="s1">&#39;active_days ~ treated + post + treated:post + C(month) + C(region)&#39;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><span class="n">panel_data</span>
+<span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">cov_type</span><span class="o">=</span><span class="s1">&#39;cluster&#39;</span><span class="p">,</span> <span class="n">cov_kwds</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;groups&#39;</span><span class="p">:</span> <span class="n">panel_data</span><span class="p">[</span><span class="s1">&#39;user_id&#39;</span><span class="p">]})</span>
+
+<span class="n">did_estimate</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s1">&#39;treated:post&#39;</span><span class="p">]</span>
+</code></pre></div>
+
+<ul>
+<li>The coefficient on <code>treated:post</code> is the DiD estimate</li>
+<li>Cluster standard errors at the user level to account for serial correlation</li>
+</ul>
+<p><strong>Step 4: Robustness checks</strong><br />
+- Placebo test: Run DiD on a pre-treatment period where no effect should exist<br />
+- Vary the post-period window (1 month, 2 months, 3 months)<br />
+- Add covariates to control for observable differences</p>
+<h3>Interpretation</h3>
+<ul>
+<li>"Users exposed to the recommendation feature increased their monthly active days by 2.3 days (95% CI: 1.8 to 2.8) relative to unexposed users, controlling for time trends and regional differences. Pre-treatment trends were statistically parallel (all lead coefficients insignificant), supporting the causal interpretation."</li>
+</ul>
+<h3>Pitfalls</h3>
+<ul>
+<li>Violation of parallel trends: If the treated group was already trending upward before the feature launch, DiD will overestimate the effect</li>
+<li>Contamination: If control users find out about the feature or are indirectly affected (spillover)</li>
+<li>Staggered rollout requires more sophisticated DiD estimators (Callaway-Sant'Anna)</li>
+</ul>
+<hr />
+<h2>Use Case 3: Game Title Release into Game Pass</h2>
+<p><strong>Method</strong>: Difference-in-Differences + Propensity Score Matching</p>
+<h3>Business Problem</h3>
+<p>When a major game title is added to Game Pass, <strong>what is the incremental revenue impact?</strong> Users who engage with new titles are self-selected (they're already more active), so naive comparison is biased.</p>
+<h3>Causal Framing</h3>
+<ul>
+<li><strong>Treatment (T)</strong>: User engages with the newly added title within 30 days of its Game Pass release</li>
+<li><strong>Outcome (Y)</strong>: Total revenue over the next 3 months (all sources)</li>
+<li><strong>Treatment definition nuance</strong>: The user must both claim/download the title AND have meaningful engagement (e.g., &gt; 2 hours played). Simply having access doesn't count.</li>
+</ul>
+<h3>Methodology Steps</h3>
+<p><strong>Step 1: Define treatment precisely</strong><br />
+- Treated: Users who played the new title for &gt; 2 hours within 30 days of release<br />
+- Control pool: Active Game Pass subscribers who did NOT play the new title<br />
+- Pre-period: 3 months before title release<br />
+- Post-period: 3 months after title release</p>
+<p><strong>Step 2: Match on pre-period behavior using PSM</strong><br />
+- Estimate propensity scores based on pre-period features: engagement, spending, genre preferences, titles played<br />
+- Match treated users to control users with similar propensity scores<br />
+- This addresses the self-selection problem</p>
+<p><strong>Step 3: Apply DiD on the matched sample</strong><br />
+- Compute the DiD estimate: change in revenue for matched treated vs. matched control<br />
+- This combines the benefits of both methods: matching handles selection on observables; DiD handles time-invariant unobservables</p>
+<p><strong>Step 4: Distinguish title-level from platform-level effects</strong><br />
+- Break down revenue into: revenue from the new title itself, revenue from other titles, in-game purchase revenue<br />
+- Check whether the new title cannibalizes spending on other titles or generates net new revenue</p>
+<h3>Interpretation</h3>
+<ul>
+<li>"Users who engaged with Title X generated $8.50 more in total platform revenue over 3 months compared to matched non-engagers, with $5.20 from incremental spending beyond the title itself. The new title did not cannibalize other title spending."</li>
+</ul>
+<hr />
+<h2>Use Case 4: Geo-Level Personalization Launch</h2>
+<p><strong>Method</strong>: Synthetic Control</p>
+<h3>Business Problem</h3>
+<p>A global platform launches a personalization feature in one country (e.g., Brazil). <strong>What is the causal lift in engagement from personalization?</strong> There is no randomized experiment -- the feature was launched nationwide in one market.</p>
+<h3>Causal Framing</h3>
+<ul>
+<li><strong>Treated unit</strong>: Brazil (country-level)</li>
+<li><strong>Outcome (Y)</strong>: Monthly average engagement (hours per user) at the country level</li>
+<li><strong>Donor pool</strong>: Other countries where personalization was NOT launched (Mexico, Argentina, Colombia, Chile, Peru, etc.)</li>
+<li><strong>Counterfactual question</strong>: What would Brazil's engagement have looked like without personalization?</li>
+</ul>
+<h3>Data Requirements</h3>
+<table>
+<thead>
+<tr>
+<th>Data Element</th>
+<th>Source</th>
+<th>Granularity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Monthly avg. engagement</td>
+<td>Telemetry aggregated</td>
+<td>Country x month</td>
+</tr>
+<tr>
+<td>Subscriber count</td>
+<td>Billing system</td>
+<td>Country x month</td>
+</tr>
+<tr>
+<td>Revenue per user</td>
+<td>Finance data</td>
+<td>Country x month</td>
+</tr>
+<tr>
+<td>Macro indicators (optional)</td>
+<td>External data</td>
+<td>Country x month</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Pre-period: 12-24 months before launch (long pre-period needed for good synthetic control fit)</li>
+<li>Post-period: 6-12 months after launch</li>
+</ul>
+<h3>Methodology Steps</h3>
+<p><strong>Step 1: Construct the donor pool</strong><br />
+- Include all countries that did NOT receive the personalization treatment during the study period<br />
+- Exclude countries that experienced major idiosyncratic shocks (e.g., a country where a console launched mid-period)</p>
+<p><strong>Step 2: Find optimal weights</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">SparseSC</span><span class="w"> </span><span class="kn">import</span> <span class="n">fit</span> <span class="k">as</span> <span class="n">sparse_sc_fit</span>
+<span class="c1"># Or using the synth package:</span>
+<span class="c1"># Minimize the distance between the treated unit&#39;s pre-treatment outcomes</span>
+<span class="c1"># and the weighted combination of donor units&#39; pre-treatment outcomes</span>
+</code></pre></div>
+
+<ul>
+<li>Solve the optimization: find weights W such that sum(W_j * Y_j_pre) approximately equals Y_brazil_pre for all pre-treatment periods</li>
+<li>Constraints: weights are non-negative and sum to 1</li>
+</ul>
+<p><strong>Step 3: Verify pre-treatment fit</strong><br />
+- Plot Brazil's actual pre-treatment engagement vs. synthetic Brazil<br />
+- The fit should be tight (RMSPE should be small)<br />
+- If the fit is poor, the synthetic control is unreliable</p>
+<p><strong>Step 4: Estimate the treatment effect</strong><br />
+- Post-treatment: Gap = Y_brazil_actual - Y_synthetic_brazil<br />
+- This gap is the estimated causal effect of personalization</p>
+<p><strong>Step 5: Inference via placebo tests</strong><br />
+- Apply the same procedure to each donor country (pretend each was treated)<br />
+- If Brazil's gap is much larger than the placebo gaps, the effect is statistically significant<br />
+- Compute the ratio of post-treatment RMSPE to pre-treatment RMSPE for Brazil vs. placebos</p>
+<h3>Interpretation</h3>
+<ul>
+<li>"Synthetic Brazil (composed of 35% Mexico, 25% Colombia, 20% Argentina, 15% Chile, 5% Peru) closely tracked actual Brazil's engagement for 18 months pre-launch (RMSPE = 0.12 hours). Post-launch, actual Brazil exceeded synthetic Brazil by 1.8 hours/user/month. Placebo tests show this gap exceeds all donor country gaps, corresponding to a p-value of 0.05."</li>
+</ul>
+<h3>Pitfalls</h3>
+<ul>
+<li>Poor pre-treatment fit invalidates the approach entirely</li>
+<li>Spillover: If the personalization launch in Brazil affects engagement in donor countries (e.g., through shared multiplayer), the synthetic control is compromised</li>
+<li>Requires aggregate-level data; cannot estimate individual-level effects</li>
+</ul>
+<hr />
+<h2>Use Case 5: Marketing Campaign Impact</h2>
+<p><strong>Method</strong>: Interrupted Time Series (ITS)</p>
+<h3>Business Problem</h3>
+<p>A company runs a major marketing campaign (TV + digital) starting on a specific date. <strong>Did the campaign cause a measurable increase in daily revenue, or was the increase part of an existing trend?</strong></p>
+<h3>Causal Framing</h3>
+<ul>
+<li><strong>Intervention</strong>: Campaign launch on day T</li>
+<li><strong>Outcome (Y)</strong>: Daily revenue</li>
+<li><strong>Unit</strong>: The entire platform (single unit, many time points)</li>
+<li><strong>Counterfactual</strong>: What would daily revenue have been if the campaign had not been launched?</li>
+</ul>
+<h3>Data Requirements</h3>
+<table>
+<thead>
+<tr>
+<th>Data Element</th>
+<th>Source</th>
+<th>Granularity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Daily revenue</td>
+<td>Finance / transactions</td>
+<td>Day-level</td>
+</tr>
+<tr>
+<td>Campaign start/end dates</td>
+<td>Marketing calendar</td>
+<td>--</td>
+</tr>
+<tr>
+<td>Known confounding events</td>
+<td>Business calendar</td>
+<td>Day-level (holidays, product launches, etc.)</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Pre-campaign: At least 60-90 days of daily revenue data</li>
+<li>Post-campaign: At least 30-60 days</li>
+</ul>
+<h3>Methodology Steps</h3>
+<p><strong>Step 1: Prepare the time-series data</strong><br />
+- Align to a daily grain<br />
+- Flag the intervention point<br />
+- Note any other events (holidays, competitor actions, product launches) that might co-occur</p>
+<p><strong>Step 2: Visualize</strong><br />
+- Plot daily revenue with a vertical line at the campaign start<br />
+- Eyeball whether there is an obvious level shift or slope change</p>
+<p><strong>Step 3: Fit the segmented regression model</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">statsmodels.formula.api</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">smf</span>
+
+<span class="n">data</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+<span class="n">data</span><span class="p">[</span><span class="s1">&#39;post&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;date&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">campaign_start</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+<span class="n">data</span><span class="p">[</span><span class="s1">&#39;time_since&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">campaign_start_idx</span>
+<span class="n">data</span><span class="p">[</span><span class="s1">&#39;time_since&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;time_since&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;post&#39;</span><span class="p">]</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span>
+    <span class="s1">&#39;revenue ~ time + post + time_since&#39;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><span class="n">data</span>
+<span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">cov_type</span><span class="o">=</span><span class="s1">&#39;HAC&#39;</span><span class="p">,</span> <span class="n">cov_kwds</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;maxlags&#39;</span><span class="p">:</span> <span class="mi">7</span><span class="p">})</span>
+</code></pre></div>
+
+<ul>
+<li><code>post</code> coefficient = immediate level change at intervention</li>
+<li><code>time_since</code> coefficient = change in the revenue trend slope after intervention</li>
+</ul>
+<p><strong>Step 4: Account for seasonality and autocorrelation</strong><br />
+- Add day-of-week dummies, month dummies, or holiday indicators<br />
+- Use Newey-West (HAC) standard errors to handle autocorrelation<br />
+- Alternatively, model using ARIMA with intervention indicators</p>
+<p><strong>Step 5: Sensitivity analysis</strong><br />
+- Vary the pre/post window lengths<br />
+- Test alternative functional forms for the pre-trend<br />
+- Check whether similar "effects" appear at placebo dates</p>
+<h3>Interpretation</h3>
+<ul>
+<li>"The marketing campaign was associated with an immediate revenue increase of $15,200/day (p = 0.003) and an additional daily growth rate of $180/day (p = 0.02) compared to the pre-campaign trend. These effects are robust to inclusion of day-of-week and holiday controls."</li>
+</ul>
+<h3>Pitfalls</h3>
+<ul>
+<li>If another event co-occurs with the campaign (e.g., a competitor's outage, a holiday), the estimated effect is confounded</li>
+<li>Requires many pre-period observations to model the trend accurately</li>
+<li>Assumes the pre-trend model would have continued in the absence of intervention</li>
+</ul>
+<hr />
+<h2>Use Case 6: Discount Redemption with Non-Compliance</h2>
+<p><strong>Method</strong>: Instrumental Variables (IV / 2SLS)</p>
+<h3>Business Problem</h3>
+<p>A platform randomly assigns users to receive a discount offer. Not all users redeem the discount. <strong>What is the causal effect of actually using the discount on subsequent spending?</strong></p>
+<h3>Causal Framing</h3>
+<ul>
+<li><strong>Instrument (Z)</strong>: Random assignment to receive the discount offer (binary: offered / not offered)</li>
+<li><strong>Treatment (T)</strong>: Actually redeeming the discount (binary: redeemed / not redeemed)</li>
+<li><strong>Outcome (Y)</strong>: Total spending in the next 3 months</li>
+<li><strong>Unmeasured confounder</strong>: "Deal-seeking propensity" -- users who redeem discounts may be systematically different in unobserved ways</li>
+</ul>
+<h3>Why Naive Analysis Fails</h3>
+<ul>
+<li>Comparing redeemers vs. non-redeemers confounds the discount effect with self-selection (deal-seekers may have different spending patterns regardless)</li>
+<li>Even within the offered group, redeemers and non-redeemers differ</li>
+</ul>
+<h3>Data Requirements</h3>
+<table>
+<thead>
+<tr>
+<th>Data Element</th>
+<th>Source</th>
+<th>Granularity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Random assignment indicator</td>
+<td>Experiment system</td>
+<td>User-level</td>
+</tr>
+<tr>
+<td>Redemption indicator</td>
+<td>Billing system</td>
+<td>User-level</td>
+</tr>
+<tr>
+<td>3-month post-assignment spending</td>
+<td>Transactions</td>
+<td>User-level</td>
+</tr>
+<tr>
+<td>Pre-assignment spending (optional)</td>
+<td>Transactions</td>
+<td>User-level</td>
+</tr>
+</tbody>
+</table>
+<h3>Methodology Steps</h3>
+<p><strong>Step 1: Verify instrument validity</strong><br />
+- Relevance: Check that assignment strongly predicts redemption (first-stage F-statistic &gt; 10)<br />
+- Independence: Assignment was random, so this holds by design<br />
+- Exclusion: Assignment only affects spending through redemption (plausible if the offer email itself doesn't change behavior without redemption)</p>
+<p><strong>Step 2: First stage regression</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># First stage: T = alpha + beta * Z + epsilon</span>
+<span class="n">first_stage</span> <span class="o">=</span> <span class="n">smf</span><span class="o">.</span><span class="n">ols</span><span class="p">(</span><span class="s1">&#39;redeemed ~ assigned&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">df</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;First stage F-stat: </span><span class="si">{</span><span class="n">first_stage</span><span class="o">.</span><span class="n">fvalue</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="c1"># F &gt; 10 indicates a strong instrument</span>
+</code></pre></div>
+
+<p><strong>Step 3: Two-Stage Least Squares (2SLS)</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">linearmodels.iv</span><span class="w"> </span><span class="kn">import</span> <span class="n">IV2SLS</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">IV2SLS</span><span class="o">.</span><span class="n">from_formula</span><span class="p">(</span>
+    <span class="s1">&#39;spending_3m ~ 1 + [redeemed ~ assigned]&#39;</span><span class="p">,</span>
+    <span class="n">data</span><span class="o">=</span><span class="n">df</span>
+<span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+</code></pre></div>
+
+<ul>
+<li>The coefficient on <code>redeemed</code> is the Local Average Treatment Effect (LATE) -- the effect of redemption for compliers</li>
+</ul>
+<p><strong>Step 4: Compare with ITT and naive OLS</strong><br />
+- ITT (Intent-to-Treat): Simple comparison of offered vs. not offered (unbiased but diluted)<br />
+- Naive OLS: Comparison of redeemers vs. non-redeemers (biased by self-selection)<br />
+- IV estimate: Effect for compliers (unbiased for this subpopulation)<br />
+- Typically: ITT &lt; IV &lt; Naive OLS (the IV falls between, correcting for both dilution and selection)</p>
+<h3>Interpretation</h3>
+<ul>
+<li>"ITT estimate: being offered the discount increased 3-month spending by $4.20 on average. IV estimate: actually redeeming the discount increased 3-month spending by $18.50 among compliers (those who would redeem when offered and not when not offered). The naive OLS estimate of $25.30 is upward biased due to selection effects."</li>
+</ul>
+<hr />
+<h2>Use Case 7: Loyalty Tier Threshold Effect</h2>
+<p><strong>Method</strong>: Regression Discontinuity Design (RDD)</p>
+<h3>Business Problem</h3>
+<p>Users who spend above $500 in a quarter are automatically upgraded to a "Premium" loyalty tier with benefits (free shipping, exclusive deals, priority support). <strong>Does receiving Premium tier status causally increase future spending and retention, or are these users simply high-spenders by nature?</strong></p>
+<h3>Causal Framing</h3>
+<ul>
+<li><strong>Running variable</strong>: Quarterly spending (continuous)</li>
+<li><strong>Cutoff</strong>: $500</li>
+<li><strong>Treatment</strong>: Premium tier status (assigned when spending &gt;= $500)</li>
+<li><strong>Outcome</strong>: Next-quarter spending and retention (binary: active or churned)</li>
+<li><strong>Key insight</strong>: Users who spent $498 vs. $502 are essentially identical in their characteristics. The $4 difference that puts one user above and one below the threshold is effectively random.</li>
+</ul>
+<h3>Data Requirements</h3>
+<table>
+<thead>
+<tr>
+<th>Data Element</th>
+<th>Source</th>
+<th>Granularity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Quarterly spending (running variable)</td>
+<td>Transactions</td>
+<td>User x quarter</td>
+</tr>
+<tr>
+<td>Tier assignment and date</td>
+<td>Loyalty system</td>
+<td>User x quarter</td>
+</tr>
+<tr>
+<td>Next-quarter spending</td>
+<td>Transactions</td>
+<td>User x quarter</td>
+</tr>
+<tr>
+<td>Next-quarter retention</td>
+<td>Activity logs</td>
+<td>User x quarter</td>
+</tr>
+<tr>
+<td>Demographics (for balance checks)</td>
+<td>Account data</td>
+<td>User-level</td>
+</tr>
+</tbody>
+</table>
+<h3>Methodology Steps</h3>
+<p><strong>Step 1: Visualize the discontinuity</strong><br />
+- Bin users by quarterly spending and plot average next-quarter spending for each bin<br />
+- Look for a visible jump at the $500 threshold</p>
+<p><strong>Step 2: Check for manipulation</strong><br />
+- Run a McCrary density test: Is there bunching just above $500? If users strategically push spending above the threshold, the design is compromised.<br />
+- Plot the density of the running variable around the cutoff</p>
+<p><strong>Step 3: Estimate the local treatment effect</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">rdrobust</span><span class="w"> </span><span class="kn">import</span> <span class="n">rdrobust</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">rdrobust</span><span class="p">(</span>
+    <span class="n">y</span><span class="o">=</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;next_quarter_spending&#39;</span><span class="p">],</span>
+    <span class="n">x</span><span class="o">=</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;quarterly_spending&#39;</span><span class="p">],</span>
+    <span class="n">c</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>  <span class="c1"># cutoff</span>
+    <span class="n">kernel</span><span class="o">=</span><span class="s1">&#39;triangular&#39;</span><span class="p">,</span>
+    <span class="n">bwselect</span><span class="o">=</span><span class="s1">&#39;mserd&#39;</span>  <span class="c1"># optimal bandwidth selection</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+</code></pre></div>
+
+<ul>
+<li>Uses local polynomial regression on both sides of the cutoff</li>
+<li>Optimal bandwidth selection balances bias (too wide) vs. variance (too narrow)</li>
+</ul>
+<p><strong>Step 4: Balance checks at the cutoff</strong><br />
+- Check that observable covariates (age, tenure, region) are continuous through the cutoff<br />
+- If they jump, it suggests manipulation or confounding</p>
+<p><strong>Step 5: Sensitivity to bandwidth</strong><br />
+- Re-estimate with different bandwidths (half, double the optimal)<br />
+- Results should be qualitatively similar across bandwidths</p>
+<h3>Interpretation</h3>
+<ul>
+<li>"Users just above the $500 threshold (Premium tier) spent $45 more in the following quarter than users just below (95% CI: $22 to $68, p = 0.001). This local estimate suggests that Premium tier status causally increases spending by approximately 9%, at least for users near the threshold."</li>
+</ul>
+<h3>Pitfalls</h3>
+<ul>
+<li>Result is LOCAL: it only applies to users near the $500 cutoff, not all users</li>
+<li>Manipulation: If users can control their spending precisely to be above $500, the as-if-random assumption breaks down</li>
+<li>Fuzzy RDD: If the cutoff is not perfectly enforced (some users below $500 get Premium, or some above don't), use fuzzy RDD with IV estimation</li>
+</ul>
+<hr />
+<h2>Use Case 8: Personalized Offer Optimization</h2>
+<p><strong>Method</strong>: Heterogeneous Treatment Effects (HTE) + Uplift Modeling</p>
+<h3>Business Problem</h3>
+<p>A subscription platform wants to reduce churn by offering targeted discounts. Not all users respond the same way. <strong>Which users should receive which offer to maximize retention while minimizing discount costs?</strong></p>
+<h3>Causal Framing</h3>
+<ul>
+<li><strong>Treatment</strong>: Discount offer (e.g., 10% off, 20% off, 30% off, or no offer)</li>
+<li><strong>Outcome</strong>: Retention (binary: renewed subscription or churned within 30 days)</li>
+<li><strong>Heterogeneity</strong>: Treatment effects vary by user characteristics (tenure, engagement level, past spending, region)</li>
+<li><strong>Goal</strong>: Estimate CATE(x) = E[retention(offer) - retention(no offer) | X = x] for each user x and each offer level</li>
+</ul>
+<h3>Data Requirements</h3>
+<table>
+<thead>
+<tr>
+<th>Data Element</th>
+<th>Source</th>
+<th>Granularity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Offer assignment (ideally random)</td>
+<td>Experiment / CRM</td>
+<td>User-level</td>
+</tr>
+<tr>
+<td>Offer type (10/20/30% or none)</td>
+<td>CRM system</td>
+<td>User-level</td>
+</tr>
+<tr>
+<td>30-day retention outcome</td>
+<td>Subscription system</td>
+<td>User-level</td>
+</tr>
+<tr>
+<td>Pre-offer features</td>
+<td>Telemetry + accounts</td>
+<td>User-level</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Requires historical experimental data where different offers were randomly assigned</li>
+<li>Minimum sample: 10,000+ users per offer variant for reliable HTE estimation</li>
+</ul>
+<h3>Methodology Steps</h3>
+<p><strong>Step 1: Train CATE estimators</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">econml.dml</span><span class="w"> </span><span class="kn">import</span> <span class="n">CausalForestDML</span>
+
+<span class="n">causal_forest</span> <span class="o">=</span> <span class="n">CausalForestDML</span><span class="p">(</span>
+    <span class="n">model_y</span><span class="o">=</span><span class="n">GradientBoostingRegressor</span><span class="p">(),</span>
+    <span class="n">model_t</span><span class="o">=</span><span class="n">GradientBoostingClassifier</span><span class="p">(),</span>
+    <span class="n">n_estimators</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">min_samples_leaf</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span>
+<span class="p">)</span>
+<span class="n">causal_forest</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">Y</span><span class="o">=</span><span class="n">retention</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">offer_level</span><span class="p">,</span> <span class="n">X</span><span class="o">=</span><span class="n">user_features</span><span class="p">,</span> <span class="n">W</span><span class="o">=</span><span class="n">confounders</span><span class="p">)</span>
+
+<span class="n">cate_estimates</span> <span class="o">=</span> <span class="n">causal_forest</span><span class="o">.</span><span class="n">effect</span><span class="p">(</span><span class="n">X</span><span class="o">=</span><span class="n">user_features</span><span class="p">)</span>
+</code></pre></div>
+
+<p><strong>Step 2: Identify persuadables</strong><br />
+- For each user, predict the uplift (incremental retention) from each offer level<br />
+- Classify users:<br />
+  - <strong>Persuadables</strong> (high uplift): Offer the cheapest effective discount<br />
+  - <strong>Sure things</strong> (would retain anyway): No offer needed<br />
+  - <strong>Lost causes</strong> (won't retain regardless): Don't waste discount budget<br />
+  - <strong>Sleeping dogs</strong> (offer backfires): Avoid contacting</p>
+<p><strong>Step 3: Optimize offer allocation</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># For each user, find the offer that maximizes:</span>
+<span class="c1"># net_value = P(retain | offer) * LTV - discount_cost</span>
+<span class="k">for</span> <span class="n">user</span> <span class="ow">in</span> <span class="n">users</span><span class="p">:</span>
+    <span class="n">best_offer</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">offers</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">o</span><span class="p">:</span> <span class="n">cate</span><span class="p">[</span><span class="n">user</span><span class="p">][</span><span class="n">o</span><span class="p">]</span> <span class="o">*</span> <span class="n">ltv</span><span class="p">[</span><span class="n">user</span><span class="p">]</span> <span class="o">-</span> <span class="n">cost</span><span class="p">[</span><span class="n">o</span><span class="p">])</span>
+    <span class="n">assignment</span><span class="p">[</span><span class="n">user</span><span class="p">]</span> <span class="o">=</span> <span class="n">best_offer</span>
+</code></pre></div>
+
+<p><strong>Step 4: Validate with a holdout experiment</strong><br />
+- Randomly split users into:<br />
+  - Model-targeted group: Each user gets the model-recommended offer<br />
+  - Random-offer group: Users get random offers (benchmark)<br />
+  - No-offer group: Control<br />
+- Compare retention and total cost across groups</p>
+<h3>Interpretation</h3>
+<ul>
+<li>"The CATE model identified that 23% of at-risk users are persuadable with a 10% discount (uplift in retention: +18pp), while 15% require a 20% discount (uplift: +25pp). 40% of users would retain without any offer. Targeting based on CATE estimates increased overall retention by 12% while reducing discount spend by 35% compared to blanket 20% discounts."</li>
+</ul>
+<hr />
+<h2>Use Case 9: Game Pass Free Trial with Non-Compliance</h2>
+<p><strong>Method</strong>: Complier Average Causal Effect (CACE / LATE)</p>
+<h3>Business Problem</h3>
+<p>Users are randomly offered a 14-day free Game Pass trial. Many offered users don't activate the trial. <strong>What is the effect of actually using Game Pass on long-term spending for users who would take the trial when offered?</strong></p>
+<h3>Causal Framing</h3>
+<ul>
+<li><strong>Instrument (Z)</strong>: Random trial offer (offered / not offered)</li>
+<li><strong>Treatment (T)</strong>: Actually activating and using the trial</li>
+<li><strong>Outcome (Y)</strong>: Spending over the next 12 months</li>
+<li><strong>Compliance types</strong>:</li>
+<li>Compliers: Activate trial when offered, would not use Game Pass otherwise</li>
+<li>Always-takers: Would find a way to use Game Pass regardless of offer</li>
+<li>Never-takers: Ignore the offer even when received</li>
+</ul>
+<h3>Methodology Steps</h3>
+<p><strong>Step 1: Measure compliance rates</strong></p>
+<div class="codehilite"><pre><span></span><code>Offered group (Z=1):   N = 50,000
+  - Activated trial:   60%  (compliers + always-takers)
+  - Did not activate:  40%  (never-takers)
+
+Not-offered group (Z=0):  N = 50,000
+  - Used Game Pass:    10%  (always-takers)
+  - Did not use:       90%  (compliers + never-takers)
+</code></pre></div>
+
+<ul>
+<li>Proportion of compliers = 60% - 10% = 50%</li>
+</ul>
+<p><strong>Step 2: Compute ITT (Intent-to-Treat)</strong><br />
+- ITT = E[Y | Z=1] - E[Y | Z=0]<br />
+- This is the average effect of being offered the trial, regardless of compliance</p>
+<p><strong>Step 3: Compute CACE (Wald estimator)</strong><br />
+- CACE = ITT / compliance_rate = ITT / (P(T=1|Z=1) - P(T=1|Z=0))<br />
+- This scales up the ITT to account for the fact that only compliers are affected</p>
+<div class="codehilite"><pre><span></span><code><span class="n">ITT</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;offered&#39;</span><span class="p">]</span><span class="o">==</span><span class="mi">1</span><span class="p">][</span><span class="s1">&#39;spending_12m&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="o">-</span> <span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;offered&#39;</span><span class="p">]</span><span class="o">==</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;spending_12m&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+<span class="n">compliance_rate</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;offered&#39;</span><span class="p">]</span><span class="o">==</span><span class="mi">1</span><span class="p">][</span><span class="s1">&#39;activated&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="o">-</span> <span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;offered&#39;</span><span class="p">]</span><span class="o">==</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;activated&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+<span class="n">CACE</span> <span class="o">=</span> <span class="n">ITT</span> <span class="o">/</span> <span class="n">compliance_rate</span>
+</code></pre></div>
+
+<p><strong>Step 4: Interpret the subpopulations</strong><br />
+- CACE applies to <strong>compliers only</strong> -- users who would activate the trial when offered and would not use Game Pass otherwise<br />
+- It does NOT apply to always-takers (who would use Game Pass anyway) or never-takers (who won't use it regardless)<br />
+- This is the most policy-relevant group: they are the ones whose behavior is changed by the offer</p>
+<h3>Interpretation</h3>
+<ul>
+<li>"ITT: Being offered a free trial increased 12-month spending by $8.40 on average. CACE: Among compliers (50% of users), actually using the Game Pass trial increased 12-month spending by $16.80. This suggests that for users on the margin (those who would try Game Pass if offered but wouldn't seek it out), the trial experience has a substantial positive effect on long-term monetization."</li>
+</ul>
+<hr />
+<h2>Use Case 10: Churn Driver Analysis</h2>
+<p><strong>Method</strong>: Causal Feature Attribution (Causal Graphs + Causal Forests)</p>
+<h3>Business Problem</h3>
+<p>Churn is increasing on a subscription platform. Product leadership asks: <strong>What is actually driving churn? What behaviors should we invest in promoting to reduce churn?</strong> This is different from "what predicts churn" -- we need actionable causal drivers.</p>
+<h3>Why Prediction is Insufficient</h3>
+<p>A predictive churn model (XGBoost, neural net) might identify "days since last login" as the top predictor. But this is tautological -- users who haven't logged in recently are about to churn by definition. The product team can't act on "make users log in more" without knowing what upstream behaviors drive login frequency.</p>
+<h3>Causal Framing</h3>
+<ul>
+<li><strong>Outcome (Y)</strong>: 90-day churn (binary)</li>
+<li><strong>Candidate causal features (X)</strong>: Multiplayer sessions, titles played, store purchases, friend interactions, support tickets, achievement completions, hours in single-player vs. multiplayer</li>
+<li><strong>Confounders</strong>: Account age, region, device, acquisition channel</li>
+<li><strong>Goal</strong>: For each behavior X_j, estimate the causal effect on churn: dP(churn) / dX_j, controlling for all other relevant variables</li>
+</ul>
+<h3>Methodology Steps</h3>
+<p><strong>Step 1: Construct the causal DAG</strong><br />
+- Use domain knowledge (product managers, user research, prior studies) to map out causal relationships<br />
+- Identify which variables are confounders, mediators, and colliders<br />
+- This determines what to control for when estimating each feature's causal effect</p>
+<p><strong>Step 2: For each candidate driver, estimate the causal effect</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">econml.dml</span><span class="w"> </span><span class="kn">import</span> <span class="n">LinearDML</span>
+
+<span class="k">for</span> <span class="n">feature</span> <span class="ow">in</span> <span class="n">candidate_drivers</span><span class="p">:</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">LinearDML</span><span class="p">(</span>
+        <span class="n">model_y</span><span class="o">=</span><span class="n">GradientBoostingRegressor</span><span class="p">(),</span>
+        <span class="n">model_t</span><span class="o">=</span><span class="n">GradientBoostingRegressor</span><span class="p">(),</span>
+        <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span>
+    <span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+        <span class="n">Y</span><span class="o">=</span><span class="n">churn_indicator</span><span class="p">,</span>
+        <span class="n">T</span><span class="o">=</span><span class="n">df</span><span class="p">[</span><span class="n">feature</span><span class="p">],</span>
+        <span class="n">X</span><span class="o">=</span><span class="n">df</span><span class="p">[</span><span class="n">effect_modifiers</span><span class="p">],</span>
+        <span class="n">W</span><span class="o">=</span><span class="n">df</span><span class="p">[</span><span class="n">confounders</span><span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">ate</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">ate</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">feature</span><span class="si">}</span><span class="s2">: ATE on churn = </span><span class="si">{</span><span class="n">ate</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<p><strong>Step 3: Rank features by causal impact</strong><br />
+- Create a ranked list: which behaviors, if increased by one unit, would reduce churn probability the most?<br />
+- Account for feasibility: some behaviors are easier to promote than others</p>
+<p><strong>Step 4: Validate causal claims</strong><br />
+- If possible, run small experiments to validate the top causal drivers<br />
+- Use sensitivity analysis to check robustness to unmeasured confounding</p>
+<h3>Interpretation</h3>
+<ul>
+<li>"Causal analysis identified three actionable drivers of churn reduction: (1) Adding one multiplayer session per week reduces churn probability by 4.2pp (p &lt; 0.01), (2) Playing a second unique title per month reduces churn by 3.1pp (p &lt; 0.01), (3) Making one friend connection reduces churn by 2.8pp (p = 0.02). In contrast, support tickets (strong predictive feature) have no causal effect on churn -- they are a symptom, not a cause."</li>
+</ul>
+<hr />
+<h2>Use Case 11: Regional Pricing Change</h2>
+<p><strong>Method</strong>: Synthetic Control</p>
+<h3>Business Problem</h3>
+<p>A streaming/gaming platform changes subscription pricing in one country (e.g., increases price by 15% in Canada). <strong>What is the causal effect of the price increase on subscriber growth and revenue?</strong></p>
+<h3>Methodology Steps</h3>
+<p><strong>Step 1: Define treated unit and donor pool</strong><br />
+- Treated: Canada<br />
+- Donors: Other countries with similar market characteristics (UK, Australia, Nordic countries, etc.) that did NOT experience a price change</p>
+<p><strong>Step 2: Build synthetic Canada</strong><br />
+- Use pre-price-change data (12-24 months) on monthly subscriber count, ARPU, and engagement<br />
+- Find weights on donor countries that minimize the pre-treatment prediction error for Canada</p>
+<p><strong>Step 3: Post-treatment gap</strong><br />
+- After the price increase, compare actual Canada to synthetic Canada<br />
+- Decompose: subscriber count effect vs. ARPU effect vs. total revenue effect</p>
+<p><strong>Step 4: Quantify trade-off</strong><br />
+- Did the 15% price increase more than offset any subscriber losses?<br />
+- Net revenue effect = (new ARPU x new subscriber count) - (old ARPU x old subscriber count)</p>
+<h3>Interpretation</h3>
+<ul>
+<li>"Synthetic Canada (45% UK + 30% Australia + 25% Netherlands) closely tracked actual Canada's subscriber trajectory for 18 months. Post-price increase, actual Canada had 3.2% fewer subscribers than synthetic Canada, but 11.8% higher revenue. The price increase was net-positive for revenue despite modest subscriber losses."</li>
+</ul>
+<hr />
+<h2>Use Case 12: Marketing Spend Optimization</h2>
+<p><strong>Method</strong>: Uplift Modeling (Multi-Treatment)</p>
+<h3>Business Problem</h3>
+<p>A marketing team has budget for retention campaigns. They can send: (A) a personalized email, (B) a push notification with a 10% discount, (C) a personalized email + 20% discount, or (D) no action. <strong>How should they allocate treatments across users to maximize retained revenue while minimizing cost?</strong></p>
+<h3>Methodology Steps</h3>
+<p><strong>Step 1: Collect historical multi-treatment experiment data</strong><br />
+- Past campaigns where users were randomly assigned to A, B, C, or D<br />
+- Record treatment, retention outcome, and user features</p>
+<p><strong>Step 2: Train multi-treatment uplift model</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">causalml.inference.meta</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseTClassifier</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">xgboost</span><span class="w"> </span><span class="kn">import</span> <span class="n">XGBClassifier</span>
+
+<span class="n">uplift_model</span> <span class="o">=</span> <span class="n">BaseTClassifier</span><span class="p">(</span>
+    <span class="n">learner</span><span class="o">=</span><span class="n">XGBClassifier</span><span class="p">(</span><span class="n">n_estimators</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">4</span><span class="p">),</span>
+    <span class="n">control_name</span><span class="o">=</span><span class="s1">&#39;no_action&#39;</span>
+<span class="p">)</span>
+<span class="n">uplift_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="o">=</span><span class="n">features</span><span class="p">,</span> <span class="n">treatment</span><span class="o">=</span><span class="n">treatment_col</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">retention</span><span class="p">)</span>
+<span class="n">uplift_predictions</span> <span class="o">=</span> <span class="n">uplift_model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="o">=</span><span class="n">new_user_features</span><span class="p">)</span>
+</code></pre></div>
+
+<p><strong>Step 3: Compute net value for each user-treatment pair</strong><br />
+- Net value = uplift_in_retention(user, treatment) x LTV(user) - cost(treatment)<br />
+- Assign each user to the treatment with the highest net value<br />
+- Respect budget constraints (e.g., limited number of 20% discounts available)</p>
+<p><strong>Step 4: Deploy and measure</strong><br />
+- Implement the targeting policy<br />
+- Hold out a random 10% for uniform random assignment (to measure ongoing calibration)<br />
+- Compare model-targeted group vs. random group on total retained revenue and total cost</p>
+<h3>Interpretation</h3>
+<ul>
+<li>"Optimized targeting allocated personalized emails (low cost) to 45% of users, push + 10% discount to 30% of users, and email + 20% discount to only 12% of users (high-value at-risk users). 13% received no action (sure things). This policy increased retention by 8% over random allocation while reducing total discount spending by 28%."</li>
+</ul>
+<hr />
+<h2>Summary: Mapping Problems to Methods</h2>
+<table>
+<thead>
+<tr>
+<th>Business Question</th>
+<th>Primary Method</th>
+<th>Fallback Method</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Does our subscription causally increase revenue?</td>
+<td>PSM</td>
+<td>DiD (if panel data)</td>
+</tr>
+<tr>
+<td>What was the impact of a feature launch?</td>
+<td>DiD</td>
+<td>Synthetic Control</td>
+</tr>
+<tr>
+<td>Impact of a game title release?</td>
+<td>DiD + PSM</td>
+<td>Synthetic Control</td>
+</tr>
+<tr>
+<td>Impact of launching in a new market?</td>
+<td>Synthetic Control</td>
+<td>DiD</td>
+</tr>
+<tr>
+<td>Did our marketing campaign work?</td>
+<td>ITS</td>
+<td>DiD (with control region)</td>
+</tr>
+<tr>
+<td>What is the effect of using a discount?</td>
+<td>IV (2SLS)</td>
+<td>CACE</td>
+</tr>
+<tr>
+<td>Does a loyalty tier cause more spending?</td>
+<td>RDD</td>
+<td>PSM</td>
+</tr>
+<tr>
+<td>Which users should get which offer?</td>
+<td>HTE / Uplift</td>
+<td>Causal Forest</td>
+</tr>
+<tr>
+<td>What is the effect for people who actually comply?</td>
+<td>CACE / LATE</td>
+<td>IV</td>
+</tr>
+<tr>
+<td>What is driving our churn?</td>
+<td>Causal feature attribution</td>
+<td>DoWhy / DAG analysis</td>
+</tr>
+<tr>
+<td>What is the optimal marketing allocation?</td>
+<td>Uplift Modeling</td>
+<td>Multi-arm bandit</td>
+</tr>
+<tr>
+<td>Impact of a price change in one region?</td>
+<td>Synthetic Control</td>
+<td>ITS</td>
+</tr>
+</tbody>
+</table>
+</body>
+</html>

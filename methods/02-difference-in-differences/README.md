@@ -1,0 +1,138 @@
+# Difference-in-Differences (DiD)
+
+## What It Is and When to Use It
+
+DiD estimates causal effects by comparing outcome changes over time between a treated group and a control group. It removes time-invariant confounding by differencing twice: once across time and once across groups.
+
+**Core formula**:
+
+```
+Effect = (Y_treated_post - Y_treated_pre) - (Y_control_post - Y_control_pre)
+```
+
+Even if the two groups start at different levels, as long as they would have moved in parallel absent treatment, the double difference isolates the causal effect.
+
+**Use when**: You have panel data (multiple units observed across multiple time periods), a clear intervention point, and both treated and control groups available.
+
+**Do NOT use when**: You only have cross-sectional data with no time dimension (use PSM), only one treated unit exists and you need to construct a counterfactual (use Synthetic Control), or the treatment is continuous/gradual with no clear cutoff and no control group (consider ITS or RDD).
+
+## Industry Use Cases
+
+### Use Case 1: Netflix -- Recommendation Algorithm Launch
+- **Business question**: Does the new recommendation engine causally increase watch time?
+- **Treatment**: Algorithm rollout to specific regions (10 of 20 regions receive the update)
+- **Outcome**: Average daily watch hours per user
+- **Why DiD**: The staggered regional rollout creates natural treatment and control groups with pre- and post-intervention data. Regions not yet receiving the update serve as the control, and the launch date provides a clean intervention point.
+- **Alternatives ruled out**:
+  - PSM: Doesn't leverage the time dimension -- would only compare regions cross-sectionally and miss the before/after structure.
+  - Synthetic Control: Designed for a single treated unit. Here we have 10 treated regions, making DiD the natural fit.
+  - A/B test: The business decided on a regional rollout, not user-level randomization, so we work with the quasi-experiment we have.
+
+### Use Case 2: Xbox -- Game Pass Day-One Title Launch
+- **Business question**: When a AAA title launches day-one on Game Pass, does it increase overall platform engagement?
+- **Treatment**: Title availability on Game Pass (before vs. after launch date)
+- **Outcome**: Daily active users on the platform
+- **Why DiD**: There is a clear intervention date (title launch), and we can compare Game Pass subscribers (treated, since they get free access) vs. non-subscribers (control, who must purchase separately). Both groups are observed before and after launch.
+- **Alternatives ruled out**:
+  - PSM: Would only compare subscribers vs. non-subscribers in one period, missing the time trend that DiD exploits.
+  - ITS: We have a natural control group (non-subscribers), making DiD more credible than a single-group time-series analysis.
+  - Synthetic Control: Unnecessary -- we have a large control group, not a single-unit setting.
+
+### Use Case 3: Uber -- Tipping Feature Introduction
+- **Business question**: Did introducing in-app tipping causally increase driver earnings and retention?
+- **Treatment**: Tipping feature enabled in specific cities
+- **Outcome**: Weekly driver earnings and 3-month driver retention
+- **Why DiD**: The feature was rolled out city-by-city, creating natural treatment and control groups. Each city has pre- and post-rollout data, and cities that haven't received the feature yet serve as controls.
+- **Alternatives ruled out**:
+  - Synthetic Control: We have many treated cities, not just one. DiD handles the multi-unit case directly.
+  - RDD: There was no threshold-based rollout rule (e.g., cities above a population cutoff). The rollout was operational, not threshold-driven.
+  - PSM: Operates at the individual level without a time dimension. DiD captures the city-level policy change over time.
+
+### Use Case 4: Airbnb -- Instant Book Policy Change
+- **Business question**: Did making Instant Book the default causally increase booking rates?
+- **Treatment**: Instant Book default activated in test markets
+- **Outcome**: Weekly booking conversion rate
+- **Why DiD**: There is a clean before/after in specific markets where the policy changed, while other markets that kept the old default serve as controls. The market-level panel structure is a textbook DiD setting.
+- **Alternatives ruled out**:
+  - PSM: The policy is a market-level intervention, not a host-level choice. PSM is designed for unit-level selection, not aggregate policy changes.
+  - ITS: We have control markets available, so DiD is strictly more credible than a single-market time-series approach.
+  - A/B test: The policy change was a market-level decision, not randomized at the host or guest level.
+
+## Key Assumptions
+
+1. **Parallel trends**: In the absence of treatment, the treated and control groups would have followed the same trajectory over time. This is the core identifying assumption. It cannot be directly tested (the counterfactual is unobserved), but pre-treatment trend alignment provides supporting evidence.
+2. **No anticipation**: The treatment group did not change its behavior before the actual intervention. If subjects adjust early (e.g., regions alter strategy when they learn they'll receive the algorithm), pre-period data is contaminated.
+3. **No spillover (SUTVA)**: The control group is unaffected by the treatment. If untreated regions change behavior because of the treated regions (e.g., competitive response), the control counterfactual is compromised.
+4. **Stable composition**: Group membership does not change over time. If the composition of treated and control groups shifts (e.g., differential attrition), the comparison is no longer apples-to-apples.
+
+### How to Check
+- **Parallel trends**: Plot pre-treatment outcomes for both groups. Run an event study with pre-period interaction terms -- coefficients should be indistinguishable from zero.
+- **No anticipation**: Check for behavioral changes in the treated group before the intervention date using event study pre-period coefficients.
+- **Placebo tests**: Apply the DiD estimator at a fake treatment date in the pre-period. The placebo effect should be near zero.
+- **Robustness**: Vary the post-period window, add covariates, try alternative control groups.
+
+## Connection to Other Methods
+
+- **Combine with PSM**: Match treated and control units on pre-treatment characteristics first, then apply DiD on the matched sample. This handles both selection-on-observables (via matching) and time-invariant unobservables (via differencing).
+- **Event study design**: Extends the basic two-period DiD to estimate dynamic treatment effects at each time period relative to the intervention. Pre-treatment coefficients validate parallel trends; post-treatment coefficients reveal how the effect evolves.
+- **Staggered DiD (Callaway-Sant'Anna, Sun-Abraham)**: When different units receive treatment at different times, naive two-way fixed effects can produce biased estimates. Modern staggered DiD estimators handle heterogeneous treatment timing correctly.
+- **Synthetic Control**: When DiD's parallel trends assumption is implausible, Synthetic Control can construct a data-driven counterfactual -- especially useful with a single treated unit.
+
+## Notebook
+
+See [02-did-netflix-feature-launch.ipynb](02-did-netflix-feature-launch.ipynb) for a complete walkthrough with simulated data covering parallel trends testing, event study estimation, robustness checks, and a demonstration of what happens when assumptions fail.
+
+## Real-World Challenges and Practical Realities
+
+### Challenge 1: Parallel Trends Is Untestable and Often Violated
+The parallel trends assumption is the foundation of DiD, yet it cannot be directly tested -- we can only check pre-treatment trends as supporting evidence. At Netflix, when rolling out a new recommendation algorithm to specific regions, treated regions were often chosen BECAUSE they were underperforming (i.e., had declining trends). This violates parallel trends by construction.
+
+**What actually happens**: The team plots pre-trends and they look "roughly parallel" -- but pre-treatment coefficients in the event study have wide confidence intervals. Stakeholders ask "are the trends parallel?" and the honest answer is "we can't reject that they're parallel, but our power to detect divergence is low." This ambiguity frequently stalls decision-making.
+
+### Challenge 2: Staggered Rollouts Break Naive DiD
+Most real product launches don't happen all at once. At Uber, the tipping feature rolled out city-by-city over 6 months. Naive two-way fixed effects (TWFE) DiD is biased in this setting because "already-treated" units serve as controls for "newly-treated" units, and if treatment effects change over time, the estimates can even have the wrong sign. Callaway-Sant'Anna and Sun-Abraham corrected this, but many practitioners still use naive TWFE.
+
+**What actually happens**: The data scientist uses standard TWFE, gets a result, a colleague points out the staggered treatment timing issue, and the team has to re-run with modern estimators -- often getting a different (usually smaller) effect estimate. This has caused real reputational damage to data science teams at multiple companies.
+
+### Challenge 3: Spillover and Contamination
+When Airbnb changes the Instant Book default in some markets, hosts in control markets might hear about it and change their settings proactively. At Xbox, when Game Pass adds a title, users in the "control" group might hear about it from friends and change their engagement.
+
+**What actually happens**: The DiD estimate is attenuated (biased toward zero) because the control group is partially treated. The team has to argue about whether spillover is "large enough to matter" without hard evidence.
+
+### Challenge 4: Composition Changes
+If the treatment changes who enters or exits the sample, the DiD estimate is biased. At Netflix, a new feature might attract new subscribers who wouldn't have signed up otherwise -- the post-treatment "treated group" now includes new members who didn't exist in the pre-period.
+
+**What actually happens**: The team restricts to a "balanced panel" (users present in both pre and post), which introduces survivorship bias. There's no clean solution -- just trade-offs.
+
+### Challenge 5: Choosing the Right Post-Period Window
+Too short and the effect hasn't fully materialized. Too long and other confounding events contaminate the estimate. At Uber, the tipping feature might take 3 months to fully affect driver behavior, but by month 4, a competitor launches a similar feature.
+
+**What actually happens**: The team runs DiD with 1-month, 3-month, and 6-month windows and gets different results. Which one to present? This is a judgment call with no clear answer, and it looks like "p-hacking" if not handled transparently.
+
+---
+
+## FAANG Interview Follow-Up Questions
+
+### Q1: "You said you verified parallel trends. But parallel pre-trends don't guarantee parallel counterfactual post-trends. How do you address this?"
+**What they're testing**: Do you understand the difference between testable pre-trends and the untestable identifying assumption?
+**Strong answer**: "You're right -- pre-trend parallelism is necessary but not sufficient. I'd bolster credibility with: (1) placebo tests at fake intervention dates, (2) including time-varying covariates that might drive differential trends, (3) checking if the effect appears immediately at the intervention (supporting causation) rather than gradually (which might indicate a pre-existing divergence), and (4) testing sensitivity to functional form (linear vs quadratic trends). If I have multiple control groups, I can test whether different control groups yield the same estimate."
+
+### Q2: "Your DiD estimate is +2.3 days of engagement. The pre-treatment mean is 15 days. Is this a meaningful effect?"
+**What they're testing**: Can you translate statistical significance into business significance?
+**Strong answer**: "That's a 15% relative lift, which is large for a product feature. But I'd contextualize it: (1) what's the cost of the feature (engineering effort, compute costs)? (2) does the effect persist or decay over time (check the event study coefficients at longer horizons)? (3) does it affect high-value or low-value users differently (layer on HTE analysis)? (4) what's the revenue translation -- 2.3 more active days per user x users affected x revenue per active day. The statistical significance (p < 0.01) means the effect is real, but the product team needs the business significance calculation."
+
+### Q3: "Your treatment was rolled out to 10 regions over 3 months. How does staggered timing affect your analysis?"
+**What they're testing**: Are you aware of the recent DiD literature on staggered adoption?
+**Strong answer**: "Standard TWFE DiD is biased with staggered treatment because it uses already-treated units as controls for newly-treated units. If treatment effects are dynamic (e.g., larger in the first month), the weights on these 'bad comparisons' can produce negative weights and biased estimates. I'd use the Callaway-Sant'Anna estimator, which only compares newly-treated units to never-treated units and aggregates group-time effects appropriately. I'd also show the group-time-specific effects to check for effect heterogeneity across cohorts."
+
+### Q4: "How would you handle the case where the treated regions were chosen because they were underperforming?"
+**What they're testing**: Do you understand endogenous treatment assignment and how it breaks DiD?
+**Strong answer**: "If underperforming regions were selected for treatment, they likely had declining trends that would have continued, violating parallel trends. The estimated effect would include both the real treatment effect and the natural 'rebound' or continued decline. I'd address this by: (1) matching treated regions to control regions with similar pre-treatment trajectories (matched DiD), (2) using synthetic control for each treated region, (3) including region-specific linear time trends in the regression to allow different pre-trends, or (4) if possible, arguing that the selection was based on LEVELS not TRENDS (regions were low but stable, not declining)."
+
+### Q5: "A colleague suggests just doing a t-test on post-treatment outcomes for treated vs control. Why bother with DiD?"
+**What they're testing**: Do you understand why differencing is necessary?
+**Strong answer**: "A t-test on post-treatment outcomes ignores baseline differences. If treated regions had higher engagement even before the intervention, the t-test attributes that baseline difference to the treatment. DiD removes this by subtracting each group's own baseline. It's the difference in the CHANGES, not the difference in LEVELS. The only scenario where a post-only t-test is valid is if treatment was randomly assigned AND groups are perfectly balanced at baseline -- which is basically never true with regional rollouts."
+
+### Q6: "You're presenting DiD results for a feature that launched 2 weeks ago. The PM wants to make a go/no-go decision. What do you tell them?"
+**What they're testing**: Practical judgment about when results are mature enough.
+**Strong answer**: "I'd present the results with heavy caveats: (1) 2 weeks may be too early to see the full effect -- novelty effects could inflate the estimate, (2) we only have 2 post-treatment data points, so statistical power is low, (3) I'd recommend waiting until we have at least 6-8 weeks of post-treatment data for a reliable estimate, (4) I'd show the event study plot -- if the effect is growing or stable, that's encouraging; if it's declining, the novelty is wearing off. I'd give a preliminary directional read but recommend against a final decision this early."

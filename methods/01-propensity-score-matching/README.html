@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>01-propensity-score-matching — README</title>
+<style>
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.55;max-width:52rem;margin:2rem auto;padding:0 1.25rem;color:#1a1a1a;}
+h1,h2,h3,h4{border-bottom:1px solid #eee;padding-bottom:.2em;margin-top:1.4em;}
+code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em;}
+pre{background:#f6f8fa;padding:1rem;border-radius:8px;overflow-x:auto;border:1px solid #e1e4e8;}
+table{border-collapse:collapse;width:100%;margin:1rem 0;font-size:.95em;}
+th,td{border:1px solid #ddd;padding:.45rem .6rem;text-align:left;}
+th{background:#f0f0f0;}
+blockquote{border-left:4px solid #ccc;margin:1rem 0;padding-left:1rem;color:#444;}
+a{color:#0969da;}
+hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
+</style>
+</head>
+<body>
+<h1>Propensity Score Matching (PSM)</h1>
+<h2>What It Is and When to Use It</h2>
+<p>Propensity Score Matching reduces selection bias in observational studies by matching treated and untreated units on their probability of receiving treatment. It collapses high-dimensional covariates into a single score: e(X) = P(Treatment=1 | X).</p>
+<p><strong>Use when</strong>: You have observational (non-experimental) data, you can measure the key confounders, you need to estimate a treatment effect, and there is no clean time-based design available.</p>
+<p><strong>Do NOT use when</strong>: You have unmeasured confounders (use IV instead), you have a sharp cutoff for treatment assignment (use RDD), or you have panel data with a clear intervention point (consider DiD first).</p>
+<h2>Industry Use Cases</h2>
+<h3>Use Case 1: Xbox -- Game Pass Subscription Impact on Revenue</h3>
+<ul>
+<li><strong>Business question</strong>: Does subscribing to Game Pass causally increase a user's total revenue, or do high-spenders self-select?</li>
+<li><strong>Treatment</strong>: User subscribes to Game Pass</li>
+<li><strong>Outcome</strong>: Total revenue over next 6 months</li>
+<li><strong>Covariates</strong>: Pre-subscription hours played, titles owned, purchase history, demographics, platform tenure</li>
+<li><strong>Why PSM</strong>: No clean intervention date (users subscribe at different times), no randomization. We have rich pre-treatment behavioral data to construct propensity scores.</li>
+<li><strong>Alternatives considered</strong>:</li>
+<li>DiD: Ruled out because there is no single "treatment date" -- users subscribe continuously. Staggered DiD is possible but PSM is simpler and more direct for user-level effects.</li>
+<li>RDD: Ruled out because there is no threshold-based assignment. Subscription is a voluntary choice.</li>
+<li>A/B test: Ideal but infeasible -- cannot randomly force users to subscribe.</li>
+</ul>
+<h3>Use Case 2: Airbnb -- Impact of "Experiences" Feature on Host Revenue</h3>
+<ul>
+<li><strong>Business question</strong>: Does a host listing an Experience (tours, activities) causally increase their accommodation booking revenue?</li>
+<li><strong>Treatment</strong>: Host lists at least one Experience</li>
+<li><strong>Outcome</strong>: Accommodation revenue over next 3 months</li>
+<li><strong>Covariates</strong>: Pre-period booking count, average nightly rate, listing quality score, response rate, location, host tenure</li>
+<li><strong>Why PSM</strong>: Hosts self-select into offering Experiences. We need to compare hosts who offer Experiences to similar hosts who don't.</li>
+<li><strong>Alternatives considered</strong>:</li>
+<li>DiD: Could work if we had a clear launch date, but Experiences rolled out gradually and hosts adopted at different times.</li>
+<li>IV: Would need a valid instrument. Proximity to tourist attractions could work but is hard to measure precisely.</li>
+</ul>
+<h3>Use Case 3: Netflix -- Impact of Downloading Content on Retention</h3>
+<ul>
+<li><strong>Business question</strong>: Does a user downloading content for offline viewing causally improve retention, or are already-loyal users more likely to download?</li>
+<li><strong>Treatment</strong>: User downloads at least 3 titles for offline viewing</li>
+<li><strong>Outcome</strong>: 90-day retention (binary)</li>
+<li><strong>Covariates</strong>: Pre-download watch hours, genre diversity, device type, account sharing behavior, subscription tier, account age</li>
+<li><strong>Why PSM</strong>: No randomization possible (can't force downloads). Rich behavioral data makes PSM feasible.</li>
+<li><strong>Alternatives considered</strong>:</li>
+<li>HTE: Can be layered on top of PSM to understand heterogeneous effects, but PSM is the first step.</li>
+<li>A/B test: Could test prompts to download but cannot force the behavior itself.</li>
+</ul>
+<h3>Use Case 4: Uber -- Impact of UberPro Enrollment on Driver Retention</h3>
+<ul>
+<li><strong>Business question</strong>: Does enrolling in UberPro (driver rewards program) causally reduce driver churn?</li>
+<li><strong>Treatment</strong>: Driver enrolls in UberPro</li>
+<li><strong>Outcome</strong>: 6-month driver retention</li>
+<li><strong>Covariates</strong>: Pre-enrollment trips completed, acceptance rate, driver rating, cancellation rate, hours online, market, vehicle type</li>
+<li><strong>Why PSM</strong>: Drivers self-select into UberPro. We need to match enrolled drivers to similar non-enrolled drivers.</li>
+<li><strong>Alternatives considered</strong>:</li>
+<li>RDD: UberPro has tier thresholds, but enrollment itself is voluntary, so RDD doesn't apply to the enrollment decision.</li>
+<li>DiD: Possible if we define enrollment date as treatment, but PSM more directly addresses the selection problem.</li>
+</ul>
+<h2>Key Assumptions</h2>
+<ol>
+<li><strong>Unconfoundedness (No unmeasured confounders)</strong>: All variables that jointly affect treatment and outcome are observed and included. This is the STRONGEST and most untestable assumption.</li>
+<li><strong>Common support (Overlap)</strong>: For every treated unit, there exists a comparable control unit with a similar propensity score.</li>
+<li><strong>SUTVA (Stable Unit Treatment Value)</strong>: One user's treatment doesn't affect another's outcome.</li>
+</ol>
+<h3>How to Check</h3>
+<ul>
+<li>Overlap: Plot propensity score distributions for treated vs control. Trim non-overlapping regions.</li>
+<li>Balance: After matching, check standardized mean differences (SMD &lt; 0.1) for all covariates.</li>
+<li>Calibration: Verify the propensity model produces well-calibrated probabilities (calibration plot, Brier score).</li>
+<li>Sensitivity: Rosenbaum bounds to assess how strong unmeasured confounding would need to be to overturn results.</li>
+</ul>
+<h2>Connection to Other Methods</h2>
+<ul>
+<li><strong>Combine with DiD</strong>: Match first (PSM), then apply DiD on the matched sample. This handles both selection-on-observables and time-invariant unobservables.</li>
+<li><strong>Extends to IPW</strong>: Instead of matching, reweight the sample using inverse propensity weights. Often more statistically efficient.</li>
+<li><strong>Feeds into HTE</strong>: Once you have a matched sample, you can estimate heterogeneous treatment effects across subgroups.</li>
+</ul>
+<h2>Notebook</h2>
+<p>See <a href="01-psm-xbox-subscription-revenue.ipynb">01-psm-xbox-subscription-revenue.ipynb</a> for a complete walkthrough with simulated data.</p>
+<h2>Real-World Challenges and Practical Realities</h2>
+<h3>Challenge 1: The Unobserved Confounder Problem (The #1 Killer)</h3>
+<p>In practice, the unconfoundedness assumption almost never holds perfectly. At Xbox, when matching Game Pass subscribers to non-subscribers, there's always an unmeasured variable like "gaming enthusiasm" or "intent to spend" that isn't fully captured by hours played or titles owned. Teams at Microsoft Research have published extensively on this -- even with 50+ covariates, sensitivity analyses often show that a moderately strong unmeasured confounder could flip the sign of the estimate.</p>
+<p><strong>What actually happens</strong>: Product teams present PSM results to leadership, and a savvy director asks "but what about users who were going to spend more anyway?" The data scientist has to explain Rosenbaum bounds and why the result is "robust to moderate confounding" -- a nuanced argument that often doesn't land well in a 30-minute decision meeting.</p>
+<h3>Challenge 2: Data Quality and Feature Engineering</h3>
+<p>Real user behavioral data is messy. At Netflix, watch hours might include autoplay background viewing. At Uber, "trips completed" might count cancelled-then-rebooked rides differently across regions. Feature definitions that seem clean in a notebook become ambiguous in production tables.</p>
+<p><strong>What actually happens</strong>: The data scientist spends 60-70% of the project time on data cleaning and feature definition, not on the matching itself. Different feature definitions can change the ATT by 30-50%.</p>
+<h3>Challenge 3: The Sample Size vs. Match Quality Trade-off</h3>
+<p>With strict calipers, you get excellent balance but lose half your sample. With loose calipers, you keep more data but matches are poor. At Airbnb, when matching hosts who offer Experiences to those who don't, strict matching on location + listing quality + tenure might leave only 2,000 of 15,000 treated hosts matched.</p>
+<p><strong>What actually happens</strong>: The team presents results and someone asks "but this only applies to 13% of our hosts -- can we generalize?" The answer is usually "no, not confidently" -- and the project scope shrinks.</p>
+<h3>Challenge 4: Temporal Leakage</h3>
+<p>When the treatment timing varies by user (e.g., subscription date), features computed from the "pre-period" might inadvertently include post-treatment data for some users, or the pre-period length might differ. This is a surprisingly common bug in real PSM implementations.</p>
+<p><strong>What actually happens</strong>: An engineer reviews the pipeline 3 months after launch and discovers that the "pre-period" window was incorrectly aligned, invalidating the original results. The team has to re-run and re-present.</p>
+<h3>Challenge 5: Stakeholder Understanding</h3>
+<p>PSM is conceptually harder to explain than A/B testing. "We found similar users and compared them" sounds reasonable, but when pressed on WHY similar users are valid counterfactuals, most non-technical stakeholders struggle with the logic.</p>
+<p><strong>What actually happens</strong>: The product manager asks "why can't we just run an A/B test?" -- and the honest answer is often "we should have, but we didn't, so now we're using the best available method for observational data."</p>
+<hr />
+<h2>FAANG Interview Follow-Up Questions</h2>
+<p>These are the types of follow-up questions an interviewer at a FAANG company would ask after you describe a PSM approach. They test depth of understanding, practical judgment, and awareness of limitations.</p>
+<h3>Q1: "You matched on propensity scores and found a positive treatment effect. How do you know there isn't an unmeasured confounder driving both treatment and outcome?"</h3>
+<p><strong>What they're testing</strong>: Do you understand the fundamental limitation of PSM?<br />
+<strong>Strong answer</strong>: "I can't prove there isn't one -- that's the core limitation. But I can quantify how strong an unmeasured confounder would need to be to nullify the result using Rosenbaum bounds or the E-value. If the result is only overturned by a confounder with a risk ratio &gt; 3, and no known variable in our domain has that kind of effect, we have reasonable confidence. I'd also check if adding additional covariates changes the estimate -- if it's stable as we add more controls, that's reassuring."</p>
+<h3>Q2: "Your propensity model has 0.92 AUC. Is that good or bad for matching?"</h3>
+<p><strong>What they're testing</strong>: Do you understand the paradox of prediction accuracy in PSM?<br />
+<strong>Strong answer</strong>: "High AUC is actually concerning for PSM. It means the model can almost perfectly separate treated from control, which implies POOR overlap in propensity scores. If the model perfectly predicts treatment, there are no comparable control units for treated units. I'd rather have moderate AUC (0.6-0.8) with good overlap. The key metric isn't AUC -- it's whether the propensity score distributions overlap and whether post-matching balance is achieved."</p>
+<h3>Q3: "You dropped 40% of your treated sample due to poor matches. How does this affect your conclusions?"</h3>
+<p><strong>What they're testing</strong>: Do you understand external validity vs. internal validity?<br />
+<strong>Strong answer</strong>: "Dropping unmatched units improves internal validity (the estimate for retained units is less biased) but hurts external validity (results may not generalize to the dropped population). The dropped users are those with extreme propensity scores -- either very likely or very unlikely to be treated. I'd characterize WHO was dropped (e.g., heavy gamers with no match) and caveat that the ATT applies to the matched subpopulation, not all treated users. If stakeholders need the full-population effect, I might switch to IPW with trimmed weights."</p>
+<h3>Q4: "You mentioned using logistic regression for the propensity model. Why not gradient boosting or a neural network?"</h3>
+<p><strong>What they're testing</strong>: Do you understand the role of the propensity model?<br />
+<strong>Strong answer</strong>: "The goal isn't prediction accuracy -- it's covariate balance. Logistic regression is naturally well-calibrated, interpretable, and less prone to overfitting the treatment assignment. GBM or neural nets might overfit and produce extreme scores that hurt overlap. That said, if logistic regression fails to achieve balance on key covariates, I might try GBM with careful calibration (e.g., isotonic regression or Platt scaling). The test is always: does the matching produce good balance? The model is a means, not an end."</p>
+<h3>Q5: "If you could go back in time, would you have designed this as an experiment instead? What would that experiment look like?"</h3>
+<p><strong>What they're testing</strong>: Do you default to experiments when possible and understand PSM's role as a second-best?<br />
+<strong>Strong answer</strong>: "Absolutely. The gold standard would be an encouragement design -- randomly vary the prominence of Game Pass in the UI (some users see a banner, others don't) and use assignment as an instrument for subscription. This avoids the unconfoundedness assumption entirely. PSM is what we use when we didn't plan the experiment in advance or when randomization is impossible (e.g., can't force subscriptions). Going forward, I'd advocate for baking experiment infrastructure into product launches."</p>
+<h3>Q6: "Walk me through exactly how you'd present this analysis to a VP who has never heard of propensity score matching."</h3>
+<p><strong>What they're testing</strong>: Can you communicate technical results to non-technical stakeholders?<br />
+<strong>Strong answer</strong>: "I'd say: 'We wanted to know if Game Pass increases spending. We can't just compare subscribers to non-subscribers because subscribers are already more engaged. So we used a technique that finds, for each subscriber, a non-subscriber who looks identical on every measurable dimension -- same play hours, same number of games, same demographics. Then we compared spending between these matched pairs. The result: Game Pass subscribers spend $12 more per month than their matched counterparts, and this effect is statistically significant. The main caveat: if there's something we can't measure that makes subscribers different, this estimate could be off.' I'd show one visual: the Love plot showing balance before and after matching."</p>
+</body>
+</html>
