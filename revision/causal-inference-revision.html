@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#080c14">
+  <title>Causal inference — visual revision maps</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/notes-theme.css">
+  <style>
+    .rev-wrap {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 1.5rem 1.25rem 4rem;
+    }
+    .rev-hero {
+      margin-bottom: 1.5rem;
+      padding: 1.5rem 1.5rem 1.35rem;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--shadow);
+    }
+    .rev-hero h1 {
+      margin: 0 0 0.35rem;
+      font-size: clamp(1.4rem, 3vw, 2rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      background: linear-gradient(120deg, #f0f9ff 0%, #a5f3fc 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .rev-hero p {
+      margin: 0;
+      color: var(--text-muted);
+      font-size: 0.98rem;
+    }
+    .rev-hero .rev-lead-links {
+      margin-top: 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .rev-hero .rev-lead-links a {
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 0.35rem 0.75rem;
+      border-radius: 999px;
+      border: 1px solid var(--border-strong);
+      background: rgba(94, 234, 212, 0.08);
+      text-decoration: none;
+      border-bottom: 1px solid var(--border-strong);
+    }
+    .rev-hero .rev-lead-links a:hover {
+      background: rgba(94, 234, 212, 0.14);
+    }
+    .rev-nav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      padding: 0.65rem 0;
+      margin: 0 0 1.5rem;
+      background: linear-gradient(180deg, rgba(8, 12, 20, 0.97) 60%, transparent);
+      backdrop-filter: blur(8px);
+    }
+    .rev-nav a {
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 0.4rem 0.65rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text-muted);
+      text-decoration: none;
+      border-bottom: 1px solid var(--border);
+    }
+    .rev-nav a:hover {
+      color: var(--accent);
+      border-color: var(--border-strong);
+    }
+    section.rev-section {
+      margin-bottom: 3rem;
+      padding: 1.5rem 1.25rem 1.75rem;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    section.rev-section h2 {
+      margin: 0 0 0.35rem;
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #f1f5f9;
+      border-left: 3px solid var(--accent);
+      padding-left: 0.75rem;
+    }
+    section.rev-section .rev-hint {
+      margin: 0 0 1.25rem;
+      font-size: 0.88rem;
+      color: var(--text-dim);
+      max-width: 52rem;
+    }
+    .to-detail {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      margin-top: 0.65rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: none;
+    }
+    .to-detail:hover {
+      color: var(--link-hover);
+    }
+
+    /* Hub map — overview */
+    .hub-map {
+      position: relative;
+      padding: 1.5rem 0 0.5rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background:
+        radial-gradient(ellipse 55% 45% at 50% 0%, rgba(94, 234, 212, 0.12), transparent 70%),
+        rgba(6, 10, 18, 0.45);
+    }
+    .hub-root {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+    }
+    .hub-root span {
+      display: inline-block;
+      padding: 0.65rem 1.5rem;
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #f8fafc;
+      border-radius: 999px;
+      border: 2px solid rgba(94, 234, 212, 0.45);
+      background: linear-gradient(145deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95));
+      box-shadow: 0 0 40px rgba(94, 234, 212, 0.12);
+    }
+    .hub-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 0.85rem;
+      padding: 0 1rem 1.25rem;
+    }
+    .hub-card {
+      display: block;
+      padding: 1rem 1rem 0.85rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.65);
+      text-decoration: none;
+      color: inherit;
+      border-bottom: 1px solid var(--border);
+      transition: border-color 0.15s ease, transform 0.15s ease;
+    }
+    .hub-card:hover {
+      border-color: var(--border-strong);
+      transform: translateY(-2px);
+    }
+    .hub-card h3 {
+      margin: 0 0 0.45rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #e2e8f0;
+    }
+    .hub-card ul {
+      margin: 0;
+      padding-left: 1.1rem;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+    .hub-card li {
+      margin: 0.2rem 0;
+    }
+    .hub-card .to-detail {
+      margin-top: 0.75rem;
+    }
+
+    /* Method grid */
+    .method-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 0.85rem;
+    }
+    .method-card {
+      display: flex;
+      flex-direction: column;
+      padding: 1rem 1.05rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: rgba(6, 10, 18, 0.5);
+      border-left: 4px solid var(--accent2);
+    }
+    .method-card .num {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.06em;
+    }
+    .method-card h3 {
+      margin: 0.25rem 0 0.35rem;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #f1f5f9;
+    }
+    .method-card p {
+      margin: 0;
+      flex: 1;
+      font-size: 0.84rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .method-card .tag {
+      display: inline-block;
+      margin-top: 0.6rem;
+      font-size: 0.72rem;
+      padding: 0.2rem 0.45rem;
+      border-radius: 4px;
+      background: rgba(167, 139, 250, 0.12);
+      color: #ddd6fe;
+      border: 1px solid rgba(167, 139, 250, 0.25);
+    }
+    .method-card a.to-detail {
+      display: block;
+      margin-top: 0.35rem;
+    }
+    .method-card a.to-detail:first-of-type {
+      margin-top: 0.75rem;
+    }
+
+    /* Decision flow */
+    .decision-flow {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      max-width: 38rem;
+      margin: 0 auto;
+    }
+    .flow-q {
+      padding: 0.85rem 1rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: rgba(30, 41, 59, 0.6);
+      font-weight: 600;
+      font-size: 0.92rem;
+      color: #f1f5f9;
+      text-align: center;
+    }
+    .flow-arrow {
+      text-align: center;
+      padding: 0.35rem 0;
+      font-size: 1.25rem;
+      color: var(--accent);
+      line-height: 1;
+    }
+    .flow-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.65rem;
+    }
+    @media (max-width: 560px) {
+      .flow-split {
+        grid-template-columns: 1fr;
+      }
+    }
+    .flow-branch {
+      padding: 0.75rem 0.85rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      font-size: 0.84rem;
+      color: var(--text-muted);
+      background: rgba(6, 10, 18, 0.45);
+    }
+    .flow-branch strong {
+      display: block;
+      margin-bottom: 0.35rem;
+      color: #e2e8f0;
+      font-size: 0.88rem;
+    }
+    .flow-note {
+      margin-top: 1.25rem;
+      text-align: center;
+      font-size: 0.84rem;
+      color: var(--text-dim);
+    }
+
+    /* Assumption matrix */
+    .assume-table-wrap {
+      overflow-x: auto;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+    .assume-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+    .assume-table th,
+    .assume-table td {
+      padding: 0.55rem 0.65rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .assume-table th {
+      background: rgba(94, 234, 212, 0.08);
+      color: #f8fafc;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .assume-table tr:last-child td {
+      border-bottom: none;
+    }
+    .assume-table td:first-child {
+      font-weight: 600;
+      color: #cbd5e1;
+      white-space: nowrap;
+    }
+
+    /* Pitfall cards */
+    .pitfall-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 0.85rem;
+    }
+    .pitfall-card {
+      padding: 1rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      border-top: 3px solid #fb7185;
+      background: rgba(6, 10, 18, 0.45);
+    }
+    .pitfall-card h3 {
+      margin: 0 0 0.5rem;
+      font-size: 0.92rem;
+      color: #fecdd3;
+    }
+    .pitfall-card ul {
+      margin: 0;
+      padding-left: 1.1rem;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    /* Use case tiles */
+    .uc-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.65rem;
+    }
+    .uc-tile {
+      display: block;
+      padding: 0.85rem 0.9rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.55);
+      text-decoration: none;
+      color: inherit;
+      transition: border-color 0.15s ease;
+      border-bottom: 1px solid var(--border);
+    }
+    .uc-tile:hover {
+      border-color: var(--border-strong);
+    }
+    .uc-tile .uc-title {
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: #f1f5f9;
+      line-height: 1.35;
+      margin-bottom: 0.35rem;
+    }
+    .uc-tile .uc-method {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      color: var(--accent);
+      letter-spacing: 0.04em;
+    }
+
+    /* Notebook strip */
+    .nb-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    .nb-chip {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: flex-start;
+      min-width: 7.5rem;
+      padding: 0.65rem 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: rgba(6, 10, 18, 0.5);
+      text-decoration: none;
+      color: inherit;
+      border-bottom: 1px solid var(--border);
+    }
+    .nb-chip:hover {
+      border-color: var(--accent2);
+    }
+    .nb-chip .nb-id {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    .nb-chip .nb-label {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 0.15rem;
+    }
+
+    .rev-footer-note {
+      margin-top: 2rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.82rem;
+      color: var(--text-dim);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="rev-wrap">
+    <header class="rev-hero">
+      <h1>Visual revision maps</h1>
+      <p>HTML-only layouts for fast scanning. Every block points to the long-form notes, method READMEs, or use-case write-ups—keep detail there, not on this page.</p>
+      <div class="rev-lead-links">
+        <a href="../causal-inference-notes.html">Detailed notes (HTML)</a>
+        <a href="../causal-inference-use-cases.html">Use cases (HTML)</a>
+        <a href="../causal-inference-notes.md">Notes (Markdown)</a>
+        <a href="../causal-inference-use-cases.md">Use cases (Markdown)</a>
+      </div>
+    </header>
+
+    <nav class="rev-nav" aria-label="Revision sections">
+      <a href="#map-overview">Overview</a>
+      <a href="#map-methods">Methods</a>
+      <a href="#map-decision">Decision</a>
+      <a href="#map-assumptions">Assumptions</a>
+      <a href="#map-pitfalls">Pitfalls</a>
+      <a href="#map-use-cases">Use cases</a>
+      <a href="#map-notebooks">Notebooks</a>
+    </nav>
+
+    <section id="map-overview" class="rev-section">
+      <h2>1. Curriculum overview</h2>
+      <p class="rev-hint">Hub layout: each card is a topic cluster. Open the linked section in the main notes for definitions, math, and examples.</p>
+      <div class="hub-map">
+        <div class="hub-root"><span>Causal inference</span></div>
+        <div class="hub-grid">
+          <a class="hub-card" href="../causal-inference-notes.html#1-core-problem-framing">
+            <h3>Core framing</h3>
+            <ul>
+              <li>Fundamental problem, potential outcomes</li>
+              <li>Confounders and DAGs</li>
+              <li>Treatment definition and time windows</li>
+            </ul>
+            <span class="to-detail">Section 1 in notes</span>
+          </a>
+          <a class="hub-card" href="../causal-inference-notes.html#2-causal-inference-methods">
+            <h3>Methods catalog</h3>
+            <ul>
+              <li>PSM, DiD, SC, ITS, IV, RDD</li>
+              <li>HTE, uplift, CACE</li>
+              <li>Feature attribution vs prediction</li>
+            </ul>
+            <span class="to-detail">Section 2 in notes</span>
+          </a>
+          <a class="hub-card" href="../causal-inference-notes.html#4-method-selection-decision-framework">
+            <h3>Choosing a design</h3>
+            <ul>
+              <li>RCT vs observational</li>
+              <li>Panel vs cross-section</li>
+              <li>When IV or RDD applies</li>
+            </ul>
+            <span class="to-detail">Section 4 in notes</span>
+          </a>
+          <a class="hub-card" href="../causal-inference-notes.html#6-key-pitfalls-and-practical-advice">
+            <h3>Credibility</h3>
+            <ul>
+              <li>Calibration, balance, overlap</li>
+              <li>Parallel trends and placebos</li>
+              <li>Sensitivity and replication</li>
+            </ul>
+            <span class="to-detail">Section 6 in notes</span>
+          </a>
+          <a class="hub-card" href="../causal-inference-notes.html#7-cross-reference-with-companion-notebooks">
+            <h3>Code path</h3>
+            <ul>
+              <li>O&#39;Reilly Python notebooks</li>
+              <li>Datasets under <code>data/</code></li>
+            </ul>
+            <span class="to-detail">Section 7 in notes</span>
+          </a>
+          <a class="hub-card" href="../causal-inference-notes.html#5-industry-references">
+            <h3>Industry context</h3>
+            <ul>
+              <li>Who publishes what (Netflix, Uber, …)</li>
+              <li>Experimentation vs observational</li>
+            </ul>
+            <span class="to-detail">Section 5 in notes</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section id="map-methods" class="rev-section">
+      <h2>2. Methods — one card each</h2>
+      <p class="rev-hint">One-line memory hook per method. Full write-ups, industry examples, and checks live in each <code>README.html</code>.</p>
+      <div class="method-grid">
+        <div class="method-card">
+          <span class="num">01</span>
+          <h3>Propensity score matching</h3>
+          <p>Match on e(X); need overlap, calibration, and balance—not just classifier AUC.</p>
+          <span class="tag">Unconfoundedness · overlap</span>
+          <a class="to-detail" href="../methods/01-propensity-score-matching/README.html">Method README</a>
+          <a class="to-detail" href="../causal-inference-notes.html#21-propensity-score-matching-psm">Notes §2.1</a>
+        </div>
+        <div class="method-card">
+          <span class="num">02</span>
+          <h3>Difference-in-differences</h3>
+          <p>Pre/post × treated/control; parallel trends are the hinge; watch staggered designs.</p>
+          <span class="tag">Panel · event study</span>
+          <a class="to-detail" href="../methods/02-difference-in-differences/README.html">Method README</a>
+          <a class="to-detail" href="../causal-inference-notes.html#22-difference-in-differences-did">Notes §2.2</a>
+        </div>
+        <div class="method-card">
+          <span class="num">03</span>
+          <h3>Synthetic control</h3>
+          <p>Donor weights for a treated unit/region; pre-period fit and placebo checks.</p>
+          <span class="tag">Aggregate · donors</span>
+          <a class="to-detail" href="../methods/03-synthetic-control/README.html">Method README</a>
+          <a class="to-detail" href="../causal-inference-notes.html#23-synthetic-control">Notes §2.3</a>
+        </div>
+        <div class="method-card">
+          <span class="num">04</span>
+          <h3>Interrupted time series</h3>
+          <p>Single series around an intervention; model dynamics; watch co-occurring shocks.</p>
+          <span class="tag">Time series</span>
+          <a class="to-detail" href="../methods/04-interrupted-time-series/README.html">Method README</a>
+          <a class="to-detail" href="../causal-inference-notes.html#24-interrupted-time-series-its">Notes §2.4</a>
+        </div>
+        <div class="method-card">
+          <span class="num">05</span>
+          <h3>Instrumental variables</h3>
+          <p>Z affects T but not Y except through T; first stage and exclusion are load-bearing.</p>
+          <span class="tag">LATE · weak IV</span>
+          <a class="to-detail" href="../methods/05-instrumental-variables/README.html">Method README</a>
+          <a class="to-detail" href="../causal-inference-notes.html#25-instrumental-variables-iv">Notes §2.5</a>
+        </div>
+        <div class="method-card">
+          <span class="num">06</span>
+          <h3>Regression discontinuity</h3>
+          <p>Local causal effect at a cutoff; continuity; bandwidth and McCrary-style checks.</p>
+          <span class="tag">Running variable</span>
+          <a class="to-detail" href="../methods/06-regression-discontinuity/README.html">Method README</a>
+          <a class="to-detail" href="../causal-inference-notes.html#26-regression-discontinuity-design-rdd">Notes §2.6</a>
+        </div>
+        <div class="method-card">
+          <span class="num">07</span>
+          <h3>Heterogeneous treatment effects</h3>
+          <p>CATE surfaces for targeting; forests and meta-learners on top of a valid base design.</p>
+          <span class="tag">Personalization</span>
+          <a class="to-detail" href="../methods/07-heterogeneous-treatment-effects/README.html">Method README</a>
+          <a class="to-detail" href="../causal-inference-notes.html#27-heterogeneous-treatment-effects-hte">Notes §2.7</a>
+        </div>
+        <div class="method-card">
+          <span class="num">08</span>
+          <h3>Uplift modeling</h3>
+          <p>Incremental outcome from treatment at the individual level; uplift/Qini for campaigns.</p>
+          <span class="tag">Marketing · budget</span>
+          <a class="to-detail" href="../methods/08-uplift-modeling/README.html">Method README</a>
+          <a class="to-detail" href="../causal-inference-notes.html#28-uplift-modeling">Notes §2.8</a>
+        </div>
+        <div class="method-card">
+          <span class="num">09</span>
+          <h3>CACE / LATE</h3>
+          <p>Experiments with non-compliance; compliers and monotonicity; interpret as local effect.</p>
+          <span class="tag">Compliance</span>
+          <a class="to-detail" href="../methods/09-cace-late/README.html">Method README</a>
+          <a class="to-detail" href="../causal-inference-notes.html#29-complier-average-causal-effect-cace--late">Notes §2.9</a>
+        </div>
+        <div class="method-card">
+          <span class="num">10</span>
+          <h3>Causal feature attribution</h3>
+          <p>Drivers that justify interventions—not the same as predictive feature importance.</p>
+          <span class="tag">DAG · refutation</span>
+          <a class="to-detail" href="../methods/10-causal-feature-attribution/README.html">Method README</a>
+          <a class="to-detail" href="../causal-inference-notes.html#3-causal-feature-attribution--drivers-analysis">Notes §3</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="map-decision" class="rev-section">
+      <h2>3. Decision path (schematic)</h2>
+      <p class="rev-hint">Compressed from the decision tree in the notes. Use it to recall branch logic, then read the full framework and table there.</p>
+      <div class="decision-flow">
+        <div class="flow-q">Do you have randomization?</div>
+        <div class="flow-arrow" aria-hidden="true">&#8595;</div>
+        <div class="flow-split">
+          <div class="flow-branch"><strong>Yes</strong> Full compliance → standard A/B effect. Non-compliance → IV / CACE.</div>
+          <div class="flow-branch"><strong>No</strong> Observational: branch on panel vs cross-section and cutoff vs no cutoff.</div>
+        </div>
+        <div class="flow-arrow" aria-hidden="true">&#8595;</div>
+        <div class="flow-q">Observational: repeated outcomes over time?</div>
+        <div class="flow-arrow" aria-hidden="true">&#8595;</div>
+        <div class="flow-split">
+          <div class="flow-branch"><strong>Many donors / aggregate</strong> Synthetic control when a good donor pool exists.</div>
+          <div class="flow-branch"><strong>Treated + control groups</strong> DiD when parallel trends are plausible.</div>
+        </div>
+        <div class="flow-arrow" aria-hidden="true">&#8595;</div>
+        <div class="flow-split">
+          <div class="flow-branch"><strong>Single unit, many periods</strong> Interrupted time series.</div>
+          <div class="flow-branch"><strong>Cross-section</strong> RDD if sharp cutoff; else PSM/IPW if confounders observed; IV if credible instrument.</div>
+        </div>
+        <p class="flow-note">Personalization layers (HTE, uplift) sit on top of a valid base design.</p>
+        <p class="flow-note"><a class="to-detail" href="../causal-inference-notes.html#4-method-selection-decision-framework">Full decision tree + quick-reference table in notes</a></p>
+      </div>
+    </section>
+
+    <section id="map-assumptions" class="rev-section">
+      <h2>4. Assumptions — revision strip</h2>
+      <p class="rev-hint">Ultra-compressed; the notes and each method README spell out checks, threats, and alternatives.</p>
+      <div class="assume-table-wrap">
+        <table class="assume-table">
+          <thead>
+            <tr>
+              <th>Method</th>
+              <th>What you are leaning on</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>PSM / IPW</td><td>Unconfoundedness, positivity/overlap, reasonably well-specified propensity.</td></tr>
+            <tr><td>DiD</td><td>Parallel trends (counterfactual path); clean pre-period; watch staggered timing.</td></tr>
+            <tr><td>Synthetic control</td><td>Pre-treatment fit predicts counterfactual; limited spillover/interference.</td></tr>
+            <tr><td>ITS</td><td>Correct dynamic model; no major co-interventions; stable seasonality.</td></tr>
+            <tr><td>IV</td><td>Relevance + exclusion; often LATE not ATE; watch weak instruments.</td></tr>
+            <tr><td>RDD</td><td>Continuity / no manipulation at cutoff; interpret locally to bandwidth.</td></tr>
+            <tr><td>HTE / uplift</td><td>Underlying causal design is valid; enough support within segments.</td></tr>
+            <tr><td>CACE</td><td>Instrument for uptake; monotonicity; defensible exclusion.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin-top:1rem;text-align:center;"><a class="to-detail" href="../causal-inference-notes.html#4-method-selection-decision-framework">Notes: assumption column in quick-reference table</a></p>
+    </section>
+
+    <section id="map-pitfalls" class="rev-section">
+      <h2>5. Pitfalls and diagnostics</h2>
+      <p class="rev-hint">What to say in a review or interview when someone shows a causal slide. Deep dives in notes §6 and in each method README.</p>
+      <div class="pitfall-grid">
+        <div class="pitfall-card">
+          <h3>Propensity work</h3>
+          <ul>
+            <li>Calibrate probabilities, not only discrimination.</li>
+            <li>Trim lack of overlap; report who drops.</li>
+            <li>Balance tables / Love plots after matching.</li>
+          </ul>
+        </div>
+        <div class="pitfall-card">
+          <h3>DiD work</h3>
+          <ul>
+            <li>Plot pre-trends; event-study leads should be ~flat.</li>
+            <li>Know staggered-DiD estimator choices at a high level.</li>
+          </ul>
+        </div>
+        <div class="pitfall-card">
+          <h3>SC &amp; IV</h3>
+          <ul>
+            <li>SC: placebo pre-periods, leave-one-out donors.</li>
+            <li>IV: first-stage strength, over-ID where possible, LATE wording.</li>
+          </ul>
+        </div>
+        <div class="pitfall-card">
+          <h3>General</h3>
+          <ul>
+            <li>Predictive importance is not a causal driver list.</li>
+            <li>Sensitivity, placebos, replication where possible.</li>
+          </ul>
+        </div>
+      </div>
+      <p style="margin-top:1rem;text-align:center;"><a class="to-detail" href="../causal-inference-notes.html#6-key-pitfalls-and-practical-advice">Full pitfalls section in notes</a></p>
+    </section>
+
+    <section id="map-use-cases" class="rev-section">
+      <h2>6. Use cases — tile map</h2>
+      <p class="rev-hint">Each tile jumps to the full narrative (business problem, data, steps, interpretation) in the use-cases document.</p>
+      <div class="uc-grid">
+        <a class="uc-tile" href="../causal-inference-use-cases.html#use-case-1-subscription-impact-on-revenue"><div class="uc-title">Subscription impact on revenue</div><div class="uc-method">PSM</div></a>
+        <a class="uc-tile" href="../causal-inference-use-cases.html#use-case-2-feature-launch-impact-on-engagement"><div class="uc-title">Feature launch on engagement</div><div class="uc-method">DiD</div></a>
+        <a class="uc-tile" href="../causal-inference-use-cases.html#use-case-3-game-title-release-into-game-pass"><div class="uc-title">Title release into Game Pass</div><div class="uc-method">DiD + matching</div></a>
+        <a class="uc-tile" href="../causal-inference-use-cases.html#use-case-4-geo-level-personalization-launch"><div class="uc-title">Geo personalization launch</div><div class="uc-method">Synthetic control</div></a>
+        <a class="uc-tile" href="../causal-inference-use-cases.html#use-case-5-marketing-campaign-impact"><div class="uc-title">Marketing campaign impact</div><div class="uc-method">ITS</div></a>
+        <a class="uc-tile" href="../causal-inference-use-cases.html#use-case-6-discount-redemption-with-non-compliance"><div class="uc-title">Discount + non-compliance</div><div class="uc-method">IV</div></a>
+        <a class="uc-tile" href="../causal-inference-use-cases.html#use-case-7-loyalty-tier-threshold-effect"><div class="uc-title">Loyalty tier threshold</div><div class="uc-method">RDD</div></a>
+        <a class="uc-tile" href="../causal-inference-use-cases.html#use-case-8-personalized-offer-optimization"><div class="uc-title">Personalized offer optimization</div><div class="uc-method">HTE + uplift</div></a>
+        <a class="uc-tile" href="../causal-inference-use-cases.html#use-case-9-game-pass-free-trial-with-non-compliance"><div class="uc-title">Free trial + non-compliance</div><div class="uc-method">CACE</div></a>
+        <a class="uc-tile" href="../causal-inference-use-cases.html#use-case-10-churn-driver-analysis"><div class="uc-title">Churn driver analysis</div><div class="uc-method">Attribution</div></a>
+        <a class="uc-tile" href="../causal-inference-use-cases.html#use-case-11-regional-pricing-change"><div class="uc-title">Regional pricing change</div><div class="uc-method">Synthetic control</div></a>
+        <a class="uc-tile" href="../causal-inference-use-cases.html#use-case-12-marketing-spend-optimization"><div class="uc-title">Marketing spend optimization</div><div class="uc-method">Uplift</div></a>
+      </div>
+      <p style="margin-top:1rem;text-align:center;">
+        <a class="to-detail" href="../causal-inference-use-cases.html#summary-mapping-problems-to-methods">Summary: mapping problems to methods</a>
+      </p>
+    </section>
+
+    <section id="map-notebooks" class="rev-section">
+      <h2>7. Python notebooks — index strip</h2>
+      <p class="rev-hint">Notebooks and CSVs live under <code>causal-inference-in-python-code-main/causal-inference-in-python/</code>. Open files locally in Jupyter/VS Code; this page only lists the map.</p>
+      <div class="nb-strip">
+        <a class="nb-chip" href="../causal-inference-notes.html#7-cross-reference-with-companion-notebooks"><span class="nb-id">01</span><span class="nb-label">Intro</span></a>
+        <a class="nb-chip" href="../causal-inference-notes.html#7-cross-reference-with-companion-notebooks"><span class="nb-id">02</span><span class="nb-label">RCT + stats</span></a>
+        <a class="nb-chip" href="../causal-inference-notes.html#7-cross-reference-with-companion-notebooks"><span class="nb-id">03</span><span class="nb-label">DAGs</span></a>
+        <a class="nb-chip" href="../causal-inference-notes.html#7-cross-reference-with-companion-notebooks"><span class="nb-id">04</span><span class="nb-label">Linear regression</span></a>
+        <a class="nb-chip" href="../causal-inference-notes.html#7-cross-reference-with-companion-notebooks"><span class="nb-id">05</span><span class="nb-label">Propensity</span></a>
+        <a class="nb-chip" href="../causal-inference-notes.html#7-cross-reference-with-companion-notebooks"><span class="nb-id">06</span><span class="nb-label">HTE</span></a>
+        <a class="nb-chip" href="../causal-inference-notes.html#7-cross-reference-with-companion-notebooks"><span class="nb-id">07</span><span class="nb-label">Meta-learners</span></a>
+        <a class="nb-chip" href="../causal-inference-notes.html#7-cross-reference-with-companion-notebooks"><span class="nb-id">08</span><span class="nb-label">DiD</span></a>
+        <a class="nb-chip" href="../causal-inference-notes.html#7-cross-reference-with-companion-notebooks"><span class="nb-id">09</span><span class="nb-label">Synthetic control</span></a>
+        <a class="nb-chip" href="../causal-inference-notes.html#7-cross-reference-with-companion-notebooks"><span class="nb-id">10</span><span class="nb-label">Geo / switchback</span></a>
+        <a class="nb-chip" href="../causal-inference-notes.html#7-cross-reference-with-companion-notebooks"><span class="nb-id">11</span><span class="nb-label">IV + compliance</span></a>
+      </div>
+      <p style="margin-top:1rem;text-align:center;"><a class="to-detail" href="../causal-inference-in-python-code-main/README.html">Python folder README</a></p>
+    </section>
+
+    <p class="rev-footer-note">Pure HTML/CSS — no diagram libraries. Regenerate styled notes from Markdown with <code>python3 scripts/render_notes_html.py</code> when sources change.</p>
+  </div>
+</body>
+</html>
