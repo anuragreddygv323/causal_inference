@@ -1,32 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>09-cace-late — README</title>
-<style>
-body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.55;max-width:52rem;margin:2rem auto;padding:0 1.25rem;color:#1a1a1a;}
-h1,h2,h3,h4{border-bottom:1px solid #eee;padding-bottom:.2em;margin-top:1.4em;}
-code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em;}
-pre{background:#f6f8fa;padding:1rem;border-radius:8px;overflow-x:auto;border:1px solid #e1e4e8;}
-table{border-collapse:collapse;width:100%;margin:1rem 0;font-size:.95em;}
-th,td{border:1px solid #ddd;padding:.45rem .6rem;text-align:left;}
-th{background:#f0f0f0;}
-blockquote{border-left:4px solid #ccc;margin:1rem 0;padding-left:1rem;color:#444;}
-a{color:#0969da;}
-hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#080c14">
+  <title>Complier Average Causal Effect (CACE / LATE)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/notes-theme.css">
+  <link rel="stylesheet" href="../../assets/pygments-monokai.css">
 </head>
 <body>
-<h1>Complier Average Causal Effect (CACE / LATE)</h1>
-<h2>What It Is and When to Use It</h2>
+  <div class="doc-shell">
+    <header class="doc-header">
+      <div class="doc-header-inner">
+        <p class="doc-kicker">Method 09</p>
+        <h1 class="doc-title">Complier Average Causal Effect (CACE / LATE)</h1>
+        <p class="doc-subtitle">When to use it, assumptions, checks, and alternatives.</p>
+        <div class="doc-meta"><span class="doc-pill">Companion notebooks in repo</span></div>
+      </div>
+    </header>
+    <article class="content">
+<h2 id="what-it-is-and-when-to-use-it">What It Is and When to Use It</h2>
 <p>CACE (also called Local Average Treatment Effect, LATE) estimates the causal effect specifically among <strong>compliers</strong> — people who take treatment when assigned to treatment and don't take it when assigned to control. It is the go-to method when experiments have non-compliance.</p>
 <p><strong>Use when</strong>: You ran an experiment but compliance is imperfect — some people assigned to treatment didn't take it, and some people in control found a way to get it anyway.</p>
-<p><strong>Do NOT use when</strong>:<br />
-- <strong>Perfect compliance</strong> — just estimate the ATE directly<br />
-- <strong>No randomization</strong> — you need observational causal methods instead<br />
+<p><strong>Do NOT use when</strong>:
+- <strong>Perfect compliance</strong> — just estimate the ATE directly
+- <strong>No randomization</strong> — you need observational causal methods instead
 - <strong>Very low compliance rate</strong> — weak instrument problem makes estimates noisy and unreliable</p>
-<h3>The Four Subpopulations</h3>
+<h3 id="the-four-subpopulations">The Four Subpopulations</h3>
 <p>In any experiment with non-compliance, every participant falls into one of four latent groups:</p>
 <table>
 <thead>
@@ -66,8 +70,8 @@ hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
 </table>
 <p>Defiers are assumed away via the <strong>monotonicity</strong> assumption — no one does the opposite of what they're told.</p>
 <hr />
-<h2>Industry Use Cases</h2>
-<h3>Use Case 1: Xbox — Game Pass Free Trial Offer</h3>
+<h2 id="industry-use-cases">Industry Use Cases</h2>
+<h3 id="use-case-1-xbox-game-pass-free-trial-offer">Use Case 1: Xbox — Game Pass Free Trial Offer</h3>
 <ul>
 <li><strong>Instrument</strong>: Random offer of a free Game Pass trial</li>
 <li><strong>Treatment</strong>: Actually activating the trial</li>
@@ -75,21 +79,21 @@ hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
 <li><strong>Setup</strong>: 60% take-up in the offered group, 10% in control (always-takers who find and activate trials on their own)</li>
 <li><strong>Why CACE</strong>: The ITT (comparing offered vs. not offered) underestimates the effect because many offered users never activate. Per-protocol analysis (comparing activators vs. non-activators) is biased upward because activators include always-takers who have higher baseline spending. CACE isolates the effect for compliers — people whose activation behavior was actually changed by the offer.</li>
 </ul>
-<h3>Use Case 2: Uber — Driver Training Program</h3>
+<h3 id="use-case-2-uber-driver-training-program">Use Case 2: Uber — Driver Training Program</h3>
 <ul>
 <li><strong>Instrument</strong>: Random invitation to an in-app training module</li>
 <li><strong>Treatment</strong>: Actually completing the training</li>
 <li><strong>Outcome</strong>: Average rider satisfaction score over next 90 days</li>
 <li><strong>Why CACE</strong>: Many invited drivers never attend. Comparing attenders to non-attenders confounds the motivation to self-improve with the actual training effect. CACE separates the two by using random invitation as an instrument.</li>
 </ul>
-<h3>Use Case 3: Netflix — Content Warning Impact</h3>
+<h3 id="use-case-3-netflix-content-warning-impact">Use Case 3: Netflix — Content Warning Impact</h3>
 <ul>
 <li><strong>Instrument</strong>: Random assignment to see content warnings before mature titles</li>
 <li><strong>Treatment</strong>: Actually reading/processing the warnings (measured via dwell time on warning screen)</li>
 <li><strong>Outcome</strong>: Completion rate of mature content</li>
 <li><strong>Why CACE</strong>: Some users click through warnings instantly without reading (never-takers from a behavioral perspective). CACE estimates the effect for users who actually engage with warnings when shown, rather than diluting across everyone.</li>
 </ul>
-<h3>Use Case 4: Airbnb — Host Education Program</h3>
+<h3 id="use-case-4-airbnb-host-education-program">Use Case 4: Airbnb — Host Education Program</h3>
 <ul>
 <li><strong>Instrument</strong>: Random invitation to a listing-optimization webinar</li>
 <li><strong>Treatment</strong>: Actually attending the webinar</li>
@@ -97,14 +101,14 @@ hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
 <li><strong>Why CACE</strong>: Attendance is voluntary — many invited hosts don't show up. CACE gives the treatment effect for hosts who would attend when invited, which is the policy-relevant quantity for deciding whether to scale the program.</li>
 </ul>
 <hr />
-<h2>Key Assumptions</h2>
+<h2 id="key-assumptions">Key Assumptions</h2>
 <ol>
 <li><strong>Monotonicity (no defiers)</strong>: Assignment can only encourage treatment, never discourage it. No one does the opposite of their assignment.</li>
 <li><strong>Exclusion restriction</strong>: Assignment affects the outcome <em>only</em> through its effect on treatment uptake. The offer letter itself doesn't change spending — only activating Game Pass does.</li>
 <li><strong>Relevance (first stage)</strong>: Assignment must actually affect treatment uptake. If nobody responds to the offer, there's no instrument. Formally: P(T=1|Z=1) ≠ P(T=1|Z=0).</li>
 </ol>
 <hr />
-<h2>Relationship to Instrumental Variables</h2>
+<h2 id="relationship-to-instrumental-variables">Relationship to Instrumental Variables</h2>
 <p>CACE is mathematically identical to an IV estimate where the randomized assignment serves as the instrument for actual treatment:</p>
 <div class="codehilite"><pre><span></span><code>CACE = ITT / Compliance Rate
      = [E(Y|Z=1) - E(Y|Z=0)] / [P(T=1|Z=1) - P(T=1|Z=0)]
@@ -112,7 +116,7 @@ hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
 
 <p>This is the <strong>Wald estimator</strong> — the reduced-form effect divided by the first-stage effect. In the IV framework, Z is the instrument, T is the endogenous treatment, and Y is the outcome.</p>
 <hr />
-<h2>ITT vs. CACE vs. Per-Protocol</h2>
+<h2 id="itt-vs-cace-vs-per-protocol">ITT vs. CACE vs. Per-Protocol</h2>
 <table>
 <thead>
 <tr>
@@ -145,41 +149,47 @@ hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
 </table>
 <p><strong>Rule of thumb</strong>: Report ITT as the primary result (it answers "should we offer this?"). Report CACE as a secondary result (it answers "what's the effect for people who actually take it?"). Avoid per-protocol unless you can convincingly argue selection isn't a problem.</p>
 <hr />
-<h2>Real-World Challenges and Practical Realities</h2>
-<h3>Challenge 1: Compliance Is Often Very Low</h3>
+<h2 id="real-world-challenges-and-practical-realities">Real-World Challenges and Practical Realities</h2>
+<h3 id="challenge-1-compliance-is-often-very-low">Challenge 1: Compliance Is Often Very Low</h3>
 <p>In many real experiments, compliance rates are dismal. At Xbox, only 30% of users offered a free Game Pass trial actually activate it. At Netflix, only 15% of users shown a content recommendation actually watch it. Low compliance means the CACE is estimated from a tiny effective sample, leading to huge variance.</p>
 <p><strong>What actually happens</strong>: The team runs a large experiment (100K users), but with 15% compliance, the effective sample for CACE estimation is ~15K compliers. The CACE estimate has wide confidence intervals, and the PM asks "so the effect could be anywhere from -$5 to +$30?" The team says yes, and the project feels like a waste.</p>
-<h3>Challenge 2: Who Are the Compliers? (The Latent Subpopulation Problem)</h3>
+<h3 id="challenge-2-who-are-the-compliers-the-latent-subpopulation-problem">Challenge 2: Who Are the Compliers? (The Latent Subpopulation Problem)</h3>
 <p>Compliers are defined as people who would take treatment when offered and not take it when not offered. But we never observe this -- we can't identify individual compliers. We can characterize them statistically (e.g., compliers tend to be younger, more engaged) but we can't point to specific people.</p>
 <p><strong>What actually happens</strong>: The PM asks "which users are the compliers?" expecting a list of user IDs. The data scientist explains that compliers are a statistical concept, not an identifiable group. The PM is confused: "So this effect applies to a group we can't even find?" This limits the actionability of CACE.</p>
-<h3>Challenge 3: The Monotonicity Assumption</h3>
+<h3 id="challenge-3-the-monotonicity-assumption">Challenge 3: The Monotonicity Assumption</h3>
 <p>CACE requires monotonicity: no "defiers" (people who do the opposite of their assignment). In most settings this is reasonable, but in some it fails. At Uber, if offering a promo to some drivers discourages them (they feel cheapened or surveilled), they're defiers. If defiers exist, the Wald estimator is biased.</p>
 <p><strong>What actually happens</strong>: The team assumes monotonicity without much scrutiny. Later, someone points out a plausible defier mechanism, and the entire analysis is questioned. There's no way to test for defiers -- it's an article of faith.</p>
-<h3>Challenge 4: ITT vs CACE Policy Relevance</h3>
+<h3 id="challenge-4-itt-vs-cace-policy-relevance">Challenge 4: ITT vs CACE Policy Relevance</h3>
 <p>The PM often just needs the ITT (what happens if we send the offer?) rather than the CACE (what happens if someone actually uses the offer?). ITT is directly actionable because the company controls the OFFER, not the UPTAKE. CACE is more theoretically interesting but less directly actionable.</p>
 <p><strong>What actually happens</strong>: The data scientist presents CACE and the PM asks "so if I send this offer to 100K users, how many more subscriptions do I get?" This is an ITT question, not a CACE question. The CACE is useful for understanding the mechanism (does Game Pass itself drive revenue, or is it just the offer?), but the operational decision depends on ITT.</p>
-<h3>Challenge 5: Always-Takers Muddy the Waters</h3>
+<h3 id="challenge-5-always-takers-muddy-the-waters">Challenge 5: Always-Takers Muddy the Waters</h3>
 <p>If 20% of the control group finds a way to get the treatment (always-takers), the ITT is diluted and the first-stage compliance rate is lower, making CACE noisier. At Xbox, always-takers might be users who subscribe through a family member's account or a third-party deal.</p>
 <p><strong>What actually happens</strong>: The team discovers that 12% of the control group activated Game Pass through a partner promotion they didn't know about. This contamination reduces the first-stage compliance rate and inflates CACE variance. The team has to decide whether to exclude these users (introducing selection bias) or keep them (accepting the noise).</p>
 <hr />
-<h2>FAANG Interview Follow-Up Questions</h2>
-<h3>Q1: "Your experiment has 60% take-up in treatment and 10% in control. What's the compliance rate, and what does it mean?"</h3>
-<p><strong>What they're testing</strong>: Can you decompose the compliance structure?<br />
+<h2 id="faang-interview-follow-up-questions">FAANG Interview Follow-Up Questions</h2>
+<h3 id="q1-your-experiment-has-60-take-up-in-treatment-and-10-in-control-whats-the-compliance-rate-and-what-does-it-mean">Q1: "Your experiment has 60% take-up in treatment and 10% in control. What's the compliance rate, and what does it mean?"</h3>
+<p><strong>What they're testing</strong>: Can you decompose the compliance structure?
 <strong>Strong answer</strong>: "Compliance rate = P(T=1|Z=1) - P(T=1|Z=0) = 0.60 - 0.10 = 0.50. This means 50% of users are compliers -- they take treatment when offered and don't when not offered. The 10% in control are always-takers. The 40% who don't take treatment when offered are never-takers. Under monotonicity (no defiers), these three groups exhaust the population: 50% compliers, 10% always-takers, 40% never-takers. The CACE applies to the 50% complier group."</p>
-<h3>Q2: "Your ITT is $8.40 and your CACE is $16.80. The naive per-protocol estimate is $25. Which do you present to the VP?"</h3>
-<p><strong>What they're testing</strong>: Can you match the right estimand to the right business question?<br />
+<h3 id="q2-your-itt-is-840-and-your-cace-is-1680-the-naive-per-protocol-estimate-is-25-which-do-you-present-to-the-vp">Q2: "Your ITT is $8.40 and your CACE is $16.80. The naive per-protocol estimate is $25. Which do you present to the VP?"</h3>
+<p><strong>What they're testing</strong>: Can you match the right estimand to the right business question?
 <strong>Strong answer</strong>: "It depends on the question: (1) 'If we send this offer to everyone, what's the average revenue increase?' -- present ITT ($8.40). This is what the VP can directly act on. (2) 'Does Game Pass itself drive revenue for users who use it?' -- present CACE ($16.80). This answers whether the product creates value. (3) NEVER present per-protocol ($25) -- it's biased upward because it compares self-selected users. I'd present both ITT and CACE with clear labels: 'For every user we offer the trial to, we gain $8.40 on average. Among users who actually try Game Pass because of our offer, the gain is $16.80.'"</p>
-<h3>Q3: "How would you characterize the complier subpopulation without being able to identify individuals?"</h3>
-<p><strong>What they're testing</strong>: Do you know complier profiling techniques?<br />
+<h3 id="q3-how-would-you-characterize-the-complier-subpopulation-without-being-able-to-identify-individuals">Q3: "How would you characterize the complier subpopulation without being able to identify individuals?"</h3>
+<p><strong>What they're testing</strong>: Do you know complier profiling techniques?
 <strong>Strong answer</strong>: "I can't identify individual compliers, but I can estimate the DISTRIBUTION of their characteristics. Method: for any characteristic X, the average X among compliers is: E[X | complier] = (E[X·T | Z=1] - E[X·T | Z=0]) / (P(T|Z=1) - P(T|Z=0)). This is a weighted IV-style estimator. I can compute this for age, engagement, tenure, etc. to build a statistical profile: 'compliers tend to be newer users (avg 8 months vs 24 months overall), moderate engagement (15 hours/month vs 20 overall), and more often on console than PC.' This helps the PM understand WHO the CACE applies to."</p>
-<h3>Q4: "If we increase the take-up rate (e.g., better UX for trial activation), does the CACE change?"</h3>
-<p><strong>What they're testing</strong>: Do you understand CACE as a function of the complier population?<br />
+<h3 id="q4-if-we-increase-the-take-up-rate-eg-better-ux-for-trial-activation-does-the-cace-change">Q4: "If we increase the take-up rate (e.g., better UX for trial activation), does the CACE change?"</h3>
+<p><strong>What they're testing</strong>: Do you understand CACE as a function of the complier population?
 <strong>Strong answer</strong>: "Yes, the CACE would likely change because the COMPLIER population changes. With better UX: (1) some former never-takers become compliers -- these are the 'marginal' users who needed a lower barrier. Their treatment effect might be SMALLER (they were less interested to begin with) or LARGER (they were deterred by friction, not disinterest). (2) The existing compliers are still compliers. (3) The new CACE is a weighted average of the old compliers and the new ones. In general, expanding compliance means the CACE moves toward the ATE as you include more of the population. But it won't necessarily stay at $16.80."</p>
-<h3>Q5: "What's the relationship between CACE and the IV estimand? When are they the same?"</h3>
-<p><strong>What they're testing</strong>: Technical depth on the connection.<br />
+<h3 id="q5-whats-the-relationship-between-cace-and-the-iv-estimand-when-are-they-the-same">Q5: "What's the relationship between CACE and the IV estimand? When are they the same?"</h3>
+<p><strong>What they're testing</strong>: Technical depth on the connection.
 <strong>Strong answer</strong>: "They're the same when the experiment assignment is the instrument. CACE is the Wald estimator: ITT / (first-stage compliance rate), which is algebraically identical to the IV/2SLS estimator using Z (assignment) as instrument for T (treatment). Under the LATE theorem (Imbens &amp; Angrist): if monotonicity holds, the IV estimand equals the average treatment effect for compliers. This is why CACE and LATE are the same thing. The connection breaks if monotonicity fails (defiers exist) or if the exclusion restriction fails (assignment directly affects the outcome beyond its effect through treatment)."</p>
-<h3>Q6: "We're debating whether to report ITT or CACE in the experiment report. The A/B testing platform only reports ITT. Should we change it?"</h3>
-<p><strong>What they're testing</strong>: Practical judgment about default reporting.<br />
+<h3 id="q6-were-debating-whether-to-report-itt-or-cace-in-the-experiment-report-the-ab-testing-platform-only-reports-itt-should-we-change-it">Q6: "We're debating whether to report ITT or CACE in the experiment report. The A/B testing platform only reports ITT. Should we change it?"</h3>
+<p><strong>What they're testing</strong>: Practical judgment about default reporting.
 <strong>Strong answer</strong>: "Keep ITT as the default. It's unbiased, requires no additional assumptions (no monotonicity, no exclusion restriction), and answers the most operationally relevant question: 'what happens when we expose users to this feature/offer?' CACE should be a supplementary analysis for situations where non-compliance is substantial and the team wants to understand the mechanism. I'd add CACE as an optional analysis in the experimentation platform, clearly labeled with its assumptions, for cases where compliance &lt; 80%. For high-compliance experiments (e.g., UI changes where compliance ≈ 100%), CACE ≈ ITT and there's no need to report both."</p>
+
+    </article>
+    <footer class="doc-footer">
+      Rendered from Markdown — <a href="https://github.com/anuragreddygv323/causal_inference">causal_inference</a>
+    </footer>
+  </div>
 </body>
 </html>

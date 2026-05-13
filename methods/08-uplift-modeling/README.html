@@ -1,34 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>08-uplift-modeling — README</title>
-<style>
-body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.55;max-width:52rem;margin:2rem auto;padding:0 1.25rem;color:#1a1a1a;}
-h1,h2,h3,h4{border-bottom:1px solid #eee;padding-bottom:.2em;margin-top:1.4em;}
-code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em;}
-pre{background:#f6f8fa;padding:1rem;border-radius:8px;overflow-x:auto;border:1px solid #e1e4e8;}
-table{border-collapse:collapse;width:100%;margin:1rem 0;font-size:.95em;}
-th,td{border:1px solid #ddd;padding:.45rem .6rem;text-align:left;}
-th{background:#f0f0f0;}
-blockquote{border-left:4px solid #ccc;margin:1rem 0;padding-left:1rem;color:#444;}
-a{color:#0969da;}
-hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#080c14">
+  <title>Uplift Modeling</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/notes-theme.css">
+  <link rel="stylesheet" href="../../assets/pygments-monokai.css">
 </head>
 <body>
-<h1>Uplift Modeling</h1>
-<h2>What It Is and When to Use It</h2>
+  <div class="doc-shell">
+    <header class="doc-header">
+      <div class="doc-header-inner">
+        <p class="doc-kicker">Method 08</p>
+        <h1 class="doc-title">Uplift Modeling</h1>
+        <p class="doc-subtitle">When to use it, assumptions, checks, and alternatives.</p>
+        <div class="doc-meta"><span class="doc-pill">Companion notebooks in repo</span></div>
+      </div>
+    </header>
+    <article class="content">
+<h2 id="what-it-is-and-when-to-use-it">What It Is and When to Use It</h2>
 <p>Uplift modeling predicts the <strong>incremental impact</strong> of treatment on each individual. It answers: <em>"What is the right offer for the right person?"</em> It operationalizes heterogeneous treatment effects for targeting.</p>
-<p><strong>Use when:</strong><br />
-- You have experimental data with multiple treatment variants<br />
-- You want to optimize targeting/allocation<br />
+<p><strong>Use when:</strong>
+- You have experimental data with multiple treatment variants
+- You want to optimize targeting/allocation
 - You need to maximize ROI of interventions</p>
-<p><strong>Do NOT use when:</strong><br />
-- You just need an average effect (use standard A/B analysis)<br />
+<p><strong>Do NOT use when:</strong>
+- You just need an average effect (use standard A/B analysis)
 - You don't have experimental data (get causal estimates first)</p>
-<h3>Four User Types</h3>
+<h3 id="four-user-types">Four User Types</h3>
 <table>
 <thead>
 <tr>
@@ -61,8 +65,8 @@ hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
 </tbody>
 </table>
 <hr />
-<h2>Industry Use Cases</h2>
-<h3>Use Case 1: Uber — Promotional Ride Credit Targeting</h3>
+<h2 id="industry-use-cases">Industry Use Cases</h2>
+<h3 id="use-case-1-uber-promotional-ride-credit-targeting">Use Case 1: Uber — Promotional Ride Credit Targeting</h3>
 <ul>
 <li><strong>Business question:</strong> Which riders should receive $5 / $10 / free ride credits to maximize reactivation?</li>
 <li><strong>Treatment:</strong> Multiple promo levels. <strong>Outcome:</strong> 30-day reactivation.</li>
@@ -71,67 +75,73 @@ hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
 <li>Standard churn model → ruled out: predicts P(outcome), not treatment lift</li>
 <li>Blanket discounts → ruled out: wasteful, many "sure things" get unnecessary discounts</li>
 </ul>
-<h3>Use Case 2: Netflix — Personalized Retention Offers</h3>
+<h3 id="use-case-2-netflix-personalized-retention-offers">Use Case 2: Netflix — Personalized Retention Offers</h3>
 <ul>
 <li><strong>Treatment:</strong> Email reminder, discounted month, free premium upgrade. <strong>Outcome:</strong> Renewal.</li>
 <li><strong>Why Uplift:</strong> Identify which offer works for which user. Some users renew anyway (sure things). Some are persuadable with just an email. Others need a discount.</li>
 </ul>
-<h3>Use Case 3: Xbox — Game Pass Upsell Targeting</h3>
+<h3 id="use-case-3-xbox-game-pass-upsell-targeting">Use Case 3: Xbox — Game Pass Upsell Targeting</h3>
 <ul>
 <li><strong>Treatment:</strong> Upgrade offer (Game Pass Core → Ultimate). <strong>Outcome:</strong> Upgrade conversion.</li>
 <li><strong>Why Uplift:</strong> Many Core users would upgrade anyway at renewal. Target the persuadable marginal users who wouldn't convert without the nudge.</li>
 </ul>
-<h3>Use Case 4: Airbnb — Host Activation Campaign</h3>
+<h3 id="use-case-4-airbnb-host-activation-campaign">Use Case 4: Airbnb — Host Activation Campaign</h3>
 <ul>
 <li><strong>Treatment:</strong> Onboarding assistance (photography, listing optimization). <strong>Outcome:</strong> First booking within 30 days.</li>
 <li><strong>Why Uplift:</strong> Not all new hosts need help. Target those where assistance makes the difference between an active listing and an abandoned one.</li>
 </ul>
 <hr />
-<h2>Methods</h2>
+<h2 id="methods">Methods</h2>
 <ul>
 <li><strong>T-learner:</strong> Train separate outcome models per treatment arm, compute uplift as difference in predicted outcomes</li>
 <li><strong>Two-Model approach:</strong> One model for treated, one for control; uplift = P(Y|T=1) - P(Y|T=0)</li>
 <li><strong>Direct uplift trees:</strong> Split on the feature that maximizes uplift difference, not prediction accuracy</li>
 <li><strong>Qini curves:</strong> Evaluation metric — area under the uplift curve, analogous to AUC for uplift models</li>
 </ul>
-<h2>Connection to HTE</h2>
+<h2 id="connection-to-hte">Connection to HTE</h2>
 <p>Uplift modeling is the <strong>operationalization of heterogeneous treatment effects</strong>. HTE estimates how effects vary across subgroups; uplift modeling takes those estimates and builds a targeting policy — deciding who gets treated and with what.</p>
 <hr />
-<h2>Real-World Challenges and Practical Realities</h2>
-<h3>Challenge 1: You Need Experimental Data (And Lots of It)</h3>
+<h2 id="real-world-challenges-and-practical-realities">Real-World Challenges and Practical Realities</h2>
+<h3 id="challenge-1-you-need-experimental-data-and-lots-of-it">Challenge 1: You Need Experimental Data (And Lots of It)</h3>
 <p>Uplift modeling requires randomized treatment/control data to estimate individual-level treatment effects. Many companies don't have this, or their experiments are too small. At Uber, the promo experiment might have 50K users but split across 4 treatment arms (12.5K each), which is often insufficient for reliable uplift estimates across dozens of user features.</p>
 <p><strong>What actually happens</strong>: The uplift model is trained on limited experimental data and produces noisy uplift predictions. When deployed, the targeting barely outperforms random assignment. The team then argues about whether the model is bad or the data is insufficient.</p>
-<h3>Challenge 2: "Sleeping Dogs" Are Real and Dangerous</h3>
+<h3 id="challenge-2-sleeping-dogs-are-real-and-dangerous">Challenge 2: "Sleeping Dogs" Are Real and Dangerous</h3>
 <p>Some users are genuinely harmed by treatment. At Netflix, sending a "we miss you" email to lapsed users can remind them to cancel their forgotten subscription. At Uber, sending promo codes to a user who just had a bad experience can feel tone-deaf and accelerate churn. These sleeping dogs can cost more than the persuadables gain.</p>
 <p><strong>What actually happens</strong>: The marketing team runs a campaign targeting all at-risk users. Post-campaign analysis shows that 5% of contacted users churned FASTER than the control group. The uplift model would have flagged these, but the team didn't build one and used a churn prediction model instead.</p>
-<h3>Challenge 3: The Churn Model Trap</h3>
+<h3 id="challenge-3-the-churn-model-trap">Challenge 3: The Churn Model Trap</h3>
 <p>Most companies have a churn prediction model and use it for targeting: "send discounts to users most likely to churn." This is wrong. The most likely churners include both persuadables (who benefit from the discount) and lost causes (who will churn regardless). Worse, sure things (who will stay anyway) might get predicted as "at risk" and receive unnecessary discounts.</p>
 <p><strong>What actually happens</strong>: The marketing team targets the top-20% churn risk with 20% discounts. Post-analysis shows: 60% of recipients would have stayed anyway (wasted money), 25% were going to churn regardless (wasted money), only 15% were actually persuaded. The uplift model would have targeted very differently.</p>
-<h3>Challenge 4: Model Evaluation Is Tricky</h3>
+<h3 id="challenge-4-model-evaluation-is-tricky">Challenge 4: Model Evaluation Is Tricky</h3>
 <p>Standard ML metrics (AUC, precision, recall) don't apply to uplift. You can't directly observe the uplift for any individual. Evaluation requires Qini curves, uplift curves, or AUUC (Area Under the Uplift Curve), which most stakeholders have never seen and don't trust.</p>
 <p><strong>What actually happens</strong>: The team presents Qini curves and the PM says "what's the accuracy?" There is no simple accuracy number for uplift models. The conversation detours into a 20-minute explanation of why uplift evaluation is different from classification evaluation.</p>
-<h3>Challenge 5: Treatment Costs and Budget Constraints</h3>
+<h3 id="challenge-5-treatment-costs-and-budget-constraints">Challenge 5: Treatment Costs and Budget Constraints</h3>
 <p>Real campaigns have constraints: limited budget, limited inventory of premium offers, channel capacity (can't email everyone on the same day). The uplift-optimal policy might say "give everyone the most expensive offer" -- which is budget-infeasible. Incorporating constraints turns the problem from ML into optimization, which requires different skills and tools.</p>
 <p><strong>What actually happens</strong>: The data scientist builds a beautiful uplift model, then the marketing team says "we can only send 10K emails and we have budget for 5K discounts." The deployment requires a constraint-optimization layer that wasn't planned for.</p>
 <hr />
-<h2>FAANG Interview Follow-Up Questions</h2>
-<h3>Q1: "You have a churn prediction model with 0.85 AUC. Why can't you just use it for targeting?"</h3>
-<p><strong>What they're testing</strong>: Do you understand the fundamental difference between prediction and uplift?<br />
+<h2 id="faang-interview-follow-up-questions">FAANG Interview Follow-Up Questions</h2>
+<h3 id="q1-you-have-a-churn-prediction-model-with-085-auc-why-cant-you-just-use-it-for-targeting">Q1: "You have a churn prediction model with 0.85 AUC. Why can't you just use it for targeting?"</h3>
+<p><strong>What they're testing</strong>: Do you understand the fundamental difference between prediction and uplift?
 <strong>Strong answer</strong>: "Because churn PREDICTION and churn PREVENTION are different problems. The model predicts P(churn). But for targeting, we need P(churn | no treatment) - P(churn | treatment) -- the INCREMENTAL effect of treatment. A user with P(churn) = 0.90 might churn regardless of our intervention (lost cause, uplift ≈ 0) or might be saved with a discount (persuadable, uplift = 0.30). The churn model can't distinguish them. Worse, it might rank 'sure things' as moderate risk and waste resources on users who'd stay anyway. The uplift model directly estimates the lift, not the level."</p>
-<h3>Q2: "How would you explain 'sleeping dogs' to a non-technical VP who wants to contact all at-risk users?"</h3>
-<p><strong>What they're testing</strong>: Can you communicate unintuitive concepts to stakeholders?<br />
+<h3 id="q2-how-would-you-explain-sleeping-dogs-to-a-non-technical-vp-who-wants-to-contact-all-at-risk-users">Q2: "How would you explain 'sleeping dogs' to a non-technical VP who wants to contact all at-risk users?"</h3>
+<p><strong>What they're testing</strong>: Can you communicate unintuitive concepts to stakeholders?
 <strong>Strong answer</strong>: "I'd say: 'Imagine you have a streaming subscription you forgot about. You're happily paying $15/month without watching. Then we send you a "we miss you" email. Now you remember you have this subscription, log in, realize you haven't watched anything in months, and cancel. Our email CAUSED you to churn. These are sleeping dogs -- users who are technically at risk but better left alone. Our data shows about 5% of at-risk users fall into this category. An uplift model identifies them and keeps us from poking the bear.' I'd show the historical evidence: control vs treated outcomes for the bottom decile of predicted uplift."</p>
-<h3>Q3: "You built a multi-treatment uplift model. The model says to give User A a $10 credit and User B a free ride. But the $10 credit costs us $10 and the free ride costs us $25. How do you incorporate costs?"</h3>
-<p><strong>What they're testing</strong>: Can you combine causal inference with economics/optimization?<br />
+<h3 id="q3-you-built-a-multi-treatment-uplift-model-the-model-says-to-give-user-a-a-10-credit-and-user-b-a-free-ride-but-the-10-credit-costs-us-10-and-the-free-ride-costs-us-25-how-do-you-incorporate-costs">Q3: "You built a multi-treatment uplift model. The model says to give User A a $10 credit and User B a free ride. But the $10 credit costs us $10 and the free ride costs us $25. How do you incorporate costs?"</h3>
+<p><strong>What they're testing</strong>: Can you combine causal inference with economics/optimization?
 <strong>Strong answer</strong>: "For each user-treatment pair, I compute: net_value = uplift(user, treatment) × LTV(user) - cost(treatment). User A: if uplift = 0.15 and LTV = $200, net_value = 0.15 × $200 - $10 = $20. User B: if uplift = 0.08 and LTV = $300, net_value = 0.08 × $300 - $25 = -$1. So User B should NOT get the free ride despite the model suggesting it -- the cost exceeds the expected benefit. I'd rank all user-treatment pairs by net_value and allocate top-down until the budget is exhausted. This is a constrained optimization problem (potentially a linear program if budget is the only constraint)."</p>
-<h3>Q4: "Your Qini curve shows the uplift model outperforms random targeting. But the improvement is only 3%. Is it worth the complexity?"</h3>
-<p><strong>What they're testing</strong>: Practical judgment about when ML adds value.<br />
+<h3 id="q4-your-qini-curve-shows-the-uplift-model-outperforms-random-targeting-but-the-improvement-is-only-3-is-it-worth-the-complexity">Q4: "Your Qini curve shows the uplift model outperforms random targeting. But the improvement is only 3%. Is it worth the complexity?"</h3>
+<p><strong>What they're testing</strong>: Practical judgment about when ML adds value.
 <strong>Strong answer</strong>: "It depends on scale. If the campaign reaches 1M users and each percentage point of targeting efficiency saves $50K, then 3% = $150K annual savings. Compare that to the cost of building and maintaining the uplift model (data scientist time, infrastructure, monitoring). At Uber's scale, even 1% improvement in targeting efficiency on promo spend could be worth millions. But at a smaller company, the complexity might not justify the gain. I'd also ask: can we get more than 3% by collecting more experimental data, adding features, or trying different model architectures?"</p>
-<h3>Q5: "You trained the uplift model on last quarter's experiment. How do you know it's still valid this quarter?"</h3>
-<p><strong>What they're testing</strong>: Do you understand model drift in causal settings?<br />
+<h3 id="q5-you-trained-the-uplift-model-on-last-quarters-experiment-how-do-you-know-its-still-valid-this-quarter">Q5: "You trained the uplift model on last quarter's experiment. How do you know it's still valid this quarter?"</h3>
+<p><strong>What they're testing</strong>: Do you understand model drift in causal settings?
 <strong>Strong answer</strong>: "Treatment effect heterogeneity can change due to: (1) user base composition shift (more/fewer new users), (2) competitive environment changes, (3) product changes that alter the baseline, (4) seasonal effects. I'd: (1) continuously run a small random holdout (5-10% of budget on random assignment) to monitor real-time uplift calibration, (2) compare the predicted uplift distribution to the holdout-estimated uplift by decile -- if they diverge, retrain, (3) set up an automated retraining pipeline triggered by drift detection. The holdout is critical -- without it, you have no way to detect when the model becomes stale."</p>
-<h3>Q6: "Design an end-to-end system for uplift-based targeting at a company like Uber with 100M users."</h3>
-<p><strong>What they're testing</strong>: Can you think at system level, not just model level?<br />
+<h3 id="q6-design-an-end-to-end-system-for-uplift-based-targeting-at-a-company-like-uber-with-100m-users">Q6: "Design an end-to-end system for uplift-based targeting at a company like Uber with 100M users."</h3>
+<p><strong>What they're testing</strong>: Can you think at system level, not just model level?
 <strong>Strong answer</strong>: "Components: (1) Experimentation platform that runs ongoing randomized holdouts across all campaigns, (2) Feature store serving real-time user features, (3) Uplift model training pipeline (weekly retrain on rolling 90-day experimental data), (4) Scoring service that computes uplift × LTV - cost for each user × treatment combination in real-time, (5) Budget optimizer (LP solver) that allocates the treatment portfolio subject to constraints, (6) Campaign execution system that delivers the personalized treatment, (7) Monitoring dashboard tracking: actual vs predicted uplift by decile, holdout performance, sleeping dog detection, total ROI. Key design choice: the random holdout must be PERMANENT -- you never stop randomizing a small fraction, because that's your ground truth."</p>
+
+    </article>
+    <footer class="doc-footer">
+      Rendered from Markdown — <a href="https://github.com/anuragreddygv323/causal_inference">causal_inference</a>
+    </footer>
+  </div>
 </body>
 </html>

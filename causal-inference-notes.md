@@ -4,15 +4,15 @@
 
 1. [Core Problem Framing](#1-core-problem-framing)
 2. [Causal Inference Methods](#2-causal-inference-methods)
-   - 2.1 [Propensity Score Matching (PSM)](#21-propensity-score-matching-psm)
-   - 2.2 [Difference-in-Differences (DiD)](#22-difference-in-differences-did)
-   - 2.3 [Synthetic Control](#23-synthetic-control)
-   - 2.4 [Interrupted Time Series (ITS)](#24-interrupted-time-series-its)
-   - 2.5 [Instrumental Variables (IV)](#25-instrumental-variables-iv)
-   - 2.6 [Regression Discontinuity Design (RDD)](#26-regression-discontinuity-design-rdd)
-   - 2.7 [Heterogeneous Treatment Effects (HTE)](#27-heterogeneous-treatment-effects-hte)
-   - 2.8 [Uplift Modeling](#28-uplift-modeling)
-   - 2.9 [Complier Average Causal Effect (CACE / LATE)](#29-complier-average-causal-effect-cace--late)
+    - 2.1 [Propensity Score Matching (PSM)](#21-propensity-score-matching-psm)
+    - 2.2 [Difference-in-Differences (DiD)](#22-difference-in-differences-did)
+    - 2.3 [Synthetic Control](#23-synthetic-control)
+    - 2.4 [Interrupted Time Series (ITS)](#24-interrupted-time-series-its)
+    - 2.5 [Instrumental Variables (IV)](#25-instrumental-variables-iv)
+    - 2.6 [Regression Discontinuity Design (RDD)](#26-regression-discontinuity-design-rdd)
+    - 2.7 [Heterogeneous Treatment Effects (HTE)](#27-heterogeneous-treatment-effects-hte)
+    - 2.8 [Uplift Modeling](#28-uplift-modeling)
+    - 2.9 [Complier Average Causal Effect (CACE / LATE)](#29-complier-average-causal-effect-cace--late)
 3. [Causal Feature Attribution / Drivers Analysis](#3-causal-feature-attribution--drivers-analysis)
 4. [Method Selection Decision Framework](#4-method-selection-decision-framework)
 5. [Industry References](#5-industry-references)
@@ -28,14 +28,14 @@
 The central challenge in causal inference is that we can **never observe both outcomes** (treated and untreated) for the same unit at the same time. This is known as the **fundamental problem of causal inference** (Holland, 1986).
 
 - **Potential Outcomes Framework (Rubin Causal Model)**: For each unit *i*, there are two potential outcomes:
-  - Y_i(1) = outcome if treated
-  - Y_i(0) = outcome if not treated
-  - The **individual treatment effect** is: tau_i = Y_i(1) - Y_i(0)
-  - We only ever observe one of these. The other is the **counterfactual**.
+    - Y_i(1) = outcome if treated
+    - Y_i(0) = outcome if not treated
+    - The **individual treatment effect** is: tau_i = Y_i(1) - Y_i(0)
+    - We only ever observe one of these. The other is the **counterfactual**.
 
 - **The goal**: Estimate the **Average Treatment Effect (ATE)**:
-  - ATE = E[Y(1) - Y(0)]
-  - Since we can't observe both for the same person, we need methods to construct credible counterfactuals.
+    - ATE = E[Y(1) - Y(0)]
+    - Since we can't observe both for the same person, we need methods to construct credible counterfactuals.
 
 ### 1.2 Confounders and Directed Acyclic Graphs (DAGs)
 
@@ -50,9 +50,9 @@ Treatment (T) --> Outcome (Y)
 
 - X causes both T and Y. If we ignore X and simply compare treated vs. untreated outcomes, the difference reflects both the true causal effect of T on Y **and** the effect of X.
 - **DAGs** (Directed Acyclic Graphs) are the formal tool for mapping out these causal relationships. They help identify:
-  - Which variables are confounders (must be controlled for)
-  - Which variables are mediators (should NOT be controlled for)
-  - Which variables are colliders (controlling for them introduces bias)
+    - Which variables are confounders (must be controlled for)
+    - Which variables are mediators (should NOT be controlled for)
+    - Which variables are colliders (controlling for them introduces bias)
 
 ### 1.3 Pre-Period vs. Post-Period
 

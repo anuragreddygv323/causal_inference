@@ -1,38 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>07-heterogeneous-treatment-effects — README</title>
-<style>
-body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.55;max-width:52rem;margin:2rem auto;padding:0 1.25rem;color:#1a1a1a;}
-h1,h2,h3,h4{border-bottom:1px solid #eee;padding-bottom:.2em;margin-top:1.4em;}
-code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em;}
-pre{background:#f6f8fa;padding:1rem;border-radius:8px;overflow-x:auto;border:1px solid #e1e4e8;}
-table{border-collapse:collapse;width:100%;margin:1rem 0;font-size:.95em;}
-th,td{border:1px solid #ddd;padding:.45rem .6rem;text-align:left;}
-th{background:#f0f0f0;}
-blockquote{border-left:4px solid #ccc;margin:1rem 0;padding-left:1rem;color:#444;}
-a{color:#0969da;}
-hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#080c14">
+  <title>Heterogeneous Treatment Effects (HTE)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/notes-theme.css">
+  <link rel="stylesheet" href="../../assets/pygments-monokai.css">
 </head>
 <body>
-<h1>Heterogeneous Treatment Effects (HTE)</h1>
-<h2>What It Is and When to Use It</h2>
+  <div class="doc-shell">
+    <header class="doc-header">
+      <div class="doc-header-inner">
+        <p class="doc-kicker">Method 07</p>
+        <h1 class="doc-title">Heterogeneous Treatment Effects (HTE)</h1>
+        <p class="doc-subtitle">When to use it, assumptions, checks, and alternatives.</p>
+        <div class="doc-meta"><span class="doc-pill">Companion notebooks in repo</span></div>
+      </div>
+    </header>
+    <article class="content">
+<h2 id="what-it-is-and-when-to-use-it">What It Is and When to Use It</h2>
 <p>HTE methods estimate how treatment effects <strong>vary across subgroups</strong>. Instead of one ATE, estimate Conditional Average Treatment Effects:</p>
 <p>$$CATE(x) = E[Y(1) - Y(0) \mid X = x]$$</p>
-<p><strong>Use when:</strong><br />
-- You have a treatment effect estimate (from A/B test, PSM, DiD) but suspect it varies across segments<br />
-- You want to personalize or target interventions<br />
+<p><strong>Use when:</strong>
+- You have a treatment effect estimate (from A/B test, PSM, DiD) but suspect it varies across segments
+- You want to personalize or target interventions
 - You need to identify who benefits most (and who might be harmed)</p>
-<p><strong>Do NOT use when:</strong><br />
-- You don't have a credible treatment effect in the first place — get ATE right first<br />
-- Your sample is too small for subgroup analysis (HTE is data-hungry)<br />
+<p><strong>Do NOT use when:</strong>
+- You don't have a credible treatment effect in the first place — get ATE right first
+- Your sample is too small for subgroup analysis (HTE is data-hungry)
 - You're fishing for significant subgroups without pre-registration (p-hacking risk)</p>
 <hr />
-<h2>Industry Use Cases</h2>
-<h3>Use Case 1: Netflix — Personalized Content Recommendations</h3>
+<h2 id="industry-use-cases">Industry Use Cases</h2>
+<h3 id="use-case-1-netflix-personalized-content-recommendations">Use Case 1: Netflix — Personalized Content Recommendations</h3>
 <table>
 <thead>
 <tr>
@@ -67,7 +71,7 @@ hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
 </tr>
 </tbody>
 </table>
-<h3>Use Case 2: Uber — Surge Pricing Sensitivity by Rider Type</h3>
+<h3 id="use-case-2-uber-surge-pricing-sensitivity-by-rider-type">Use Case 2: Uber — Surge Pricing Sensitivity by Rider Type</h3>
 <table>
 <thead>
 <tr>
@@ -94,7 +98,7 @@ hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
 </tr>
 </tbody>
 </table>
-<h3>Use Case 3: Xbox — Game Pass Trial Offer Effectiveness</h3>
+<h3 id="use-case-3-xbox-game-pass-trial-offer-effectiveness">Use Case 3: Xbox — Game Pass Trial Offer Effectiveness</h3>
 <table>
 <thead>
 <tr>
@@ -121,7 +125,7 @@ hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
 </tr>
 </tbody>
 </table>
-<h3>Use Case 4: Airbnb — Search Ranking Algorithm Effect</h3>
+<h3 id="use-case-4-airbnb-search-ranking-algorithm-effect">Use Case 4: Airbnb — Search Ranking Algorithm Effect</h3>
 <table>
 <thead>
 <tr>
@@ -149,15 +153,15 @@ hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
 </tbody>
 </table>
 <hr />
-<h2>Methods</h2>
-<h3>Causal Forests</h3>
+<h2 id="methods">Methods</h2>
+<h3 id="causal-forests">Causal Forests</h3>
 <ul>
 <li>Extension of random forests that directly optimizes for treatment effect heterogeneity</li>
 <li>Splits on covariates that maximize variation in CATE</li>
 <li>Best for <em>discovering</em> heterogeneity when you don't know where to look</li>
 <li>Implementation: <code>econml.dml.CausalForestDML</code>, <code>grf</code> (R)</li>
 </ul>
-<h3>Meta-Learners</h3>
+<h3 id="meta-learners">Meta-Learners</h3>
 <table>
 <thead>
 <tr>
@@ -194,14 +198,14 @@ hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
 </tr>
 </tbody>
 </table>
-<h3>BART (Bayesian Additive Regression Trees)</h3>
+<h3 id="bart-bayesian-additive-regression-trees">BART (Bayesian Additive Regression Trees)</h3>
 <ul>
 <li>Bayesian nonparametric approach with natural uncertainty quantification</li>
 <li>Posterior intervals on CATE without bootstrap</li>
 <li>Implementation: <code>bartpy</code>, <code>dbarts</code> (R)</li>
 </ul>
 <hr />
-<h2>Key Assumptions</h2>
+<h2 id="key-assumptions">Key Assumptions</h2>
 <ol>
 <li><strong>Unconfoundedness</strong> (inherited from the identification strategy): Treatment assignment is independent of potential outcomes conditional on X</li>
 <li><strong>Overlap/positivity</strong>: All subgroups have both treated and control units — if a segment is 100% treated, you can't estimate CATE there</li>
@@ -209,52 +213,58 @@ hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
 <li><strong>SUTVA</strong>: No interference between units</li>
 </ol>
 <hr />
-<h2>Connection to Uplift Modeling</h2>
-<p>HTE estimation and uplift modeling are <strong>the same problem</strong> viewed from different traditions:<br />
-- <strong>HTE</strong> (causal inference / econometrics): Focuses on estimating CATE with valid statistical properties<br />
+<h2 id="connection-to-uplift-modeling">Connection to Uplift Modeling</h2>
+<p>HTE estimation and uplift modeling are <strong>the same problem</strong> viewed from different traditions:
+- <strong>HTE</strong> (causal inference / econometrics): Focuses on estimating CATE with valid statistical properties
 - <strong>Uplift modeling</strong> (marketing / ML): Focuses on <em>ranking</em> individuals by treatment benefit for targeting</p>
-<p>The four quadrants of uplift:<br />
-- <strong>Persuadables</strong>: Positive CATE — target these<br />
-- <strong>Sure things</strong>: Good outcome regardless — don't waste treatment<br />
-- <strong>Lost causes</strong>: Bad outcome regardless — don't waste treatment<br />
+<p>The four quadrants of uplift:
+- <strong>Persuadables</strong>: Positive CATE — target these
+- <strong>Sure things</strong>: Good outcome regardless — don't waste treatment
+- <strong>Lost causes</strong>: Bad outcome regardless — don't waste treatment
 - <strong>Sleeping dogs</strong>: Negative CATE — treatment <em>hurts</em> — definitely avoid</p>
 <p>Both use the same methods (T-learner, causal forests, etc.) but differ in evaluation metrics: uplift modeling uses uplift curves and AUUC; HTE focuses on MSE of CATE estimates.</p>
 <hr />
-<h2>Real-World Challenges and Practical Realities</h2>
-<h3>Challenge 1: Overfitting to Noise</h3>
+<h2 id="real-world-challenges-and-practical-realities">Real-World Challenges and Practical Realities</h2>
+<h3 id="challenge-1-overfitting-to-noise">Challenge 1: Overfitting to Noise</h3>
 <p>Causal forests and meta-learners are flexible ML models applied to treatment effect estimation. They can overfit, finding "heterogeneity" that is actually noise. At Netflix, a causal forest might identify that users born on Tuesdays benefit more from the new algorithm -- this is obviously spurious, but subtler versions of this problem are common.</p>
 <p><strong>What actually happens</strong>: The team finds "users in the 25-34 age group benefit 3x more than others." Is this real heterogeneity or a statistical artifact? Without a holdout validation (which requires a separate experiment), it's hard to tell. Many HTE findings fail to replicate.</p>
-<h3>Challenge 2: The "Multiple Comparisons" Problem</h3>
+<h3 id="challenge-2-the-multiple-comparisons-problem">Challenge 2: The "Multiple Comparisons" Problem</h3>
 <p>Testing for heterogeneity across many subgroups is a form of multiple hypothesis testing. With 20 user segments, there's a high chance of finding at least one that looks significantly different, even if the true effect is homogeneous. Standard corrections (Bonferroni, FDR) are conservative and may kill real findings.</p>
 <p><strong>What actually happens</strong>: The team finds "significant" heterogeneity in 3 of 15 segments. After Bonferroni correction, none are significant. The PM says "but 3 out of 15 is clearly not random!" -- and the statistical debate begins.</p>
-<h3>Challenge 3: CATE Estimates Are Noisy</h3>
+<h3 id="challenge-3-cate-estimates-are-noisy">Challenge 3: CATE Estimates Are Noisy</h3>
 <p>Individual-level treatment effects are inherently noisy because we never observe both potential outcomes. Even with 100K users, the CATE for a specific subgroup of 500 users might have huge variance. At Uber, estimating the treatment effect of surge pricing for "business travelers during evening rush hour" requires slicing the data so thinly that precision evaporates.</p>
 <p><strong>What actually happens</strong>: The CATE estimates are noisy enough that the optimal targeting policy (based on CATE) barely outperforms random assignment. The team shows a 3% improvement in targeting efficiency, and the PM questions whether the complexity of the HTE model is worth it.</p>
-<h3>Challenge 4: Operationalization Gap</h3>
+<h3 id="challenge-4-operationalization-gap">Challenge 4: Operationalization Gap</h3>
 <p>Even when HTE is estimated cleanly, translating CATE estimates into production targeting systems is hard. The model needs to score users in real-time, the features used in the CATE model need to be available at decision time, and the targeting policy needs to be integrated with the CRM or product system.</p>
 <p><strong>What actually happens</strong>: The data scientist builds a beautiful causal forest on historical data. The engineering team says "we can't compute 'genre diversity score' in real-time" and "our targeting system only accepts binary segments, not continuous CATE scores." The model has to be simplified, losing much of its value.</p>
-<h3>Challenge 5: External Validity</h3>
+<h3 id="challenge-5-external-validity">Challenge 5: External Validity</h3>
 <p>HTE estimated from one experiment may not transfer to another context. At Netflix, if the heterogeneity was estimated from a US experiment, it may not apply to the Japan launch. User segments that are "persuadable" in one context might not be in another.</p>
 <p><strong>What actually happens</strong>: The team uses HTE from Q1 experiment to target Q3 campaign. The Q3 results show no benefit from targeting, because user behavior shifted between quarters (new content, seasonal changes, competitive dynamics).</p>
 <hr />
-<h2>FAANG Interview Follow-Up Questions</h2>
-<h3>Q1: "You found that new users (&lt; 6 months) benefit most from the recommendation algorithm. But your experiment had 10x more veteran users than new users. How confident are you in the new-user CATE?"</h3>
-<p><strong>What they're testing</strong>: Do you understand statistical power for subgroup effects?<br />
+<h2 id="faang-interview-follow-up-questions">FAANG Interview Follow-Up Questions</h2>
+<h3 id="q1-you-found-that-new-users-6-months-benefit-most-from-the-recommendation-algorithm-but-your-experiment-had-10x-more-veteran-users-than-new-users-how-confident-are-you-in-the-new-user-cate">Q1: "You found that new users (&lt; 6 months) benefit most from the recommendation algorithm. But your experiment had 10x more veteran users than new users. How confident are you in the new-user CATE?"</h3>
+<p><strong>What they're testing</strong>: Do you understand statistical power for subgroup effects?
 <strong>Strong answer</strong>: "Less confident. The new-user subgroup has 1/10th the sample, so the CATE estimate has roughly 3x the standard error. I'd check: (1) is the CATE for new users significantly different from the overall ATE (test for heterogeneity, not just significance within the subgroup)? (2) the confidence interval for new-user CATE -- if it's very wide, the finding is suggestive but not conclusive, (3) I'd recommend a follow-up experiment enriched with new users (oversample new users) to confirm this specific finding before building a targeting strategy around it."</p>
-<h3>Q2: "How would you validate that your CATE model actually improves business outcomes compared to treating everyone the same?"</h3>
-<p><strong>What they're testing</strong>: Do you know how to operationalize and validate HTE?<br />
+<h3 id="q2-how-would-you-validate-that-your-cate-model-actually-improves-business-outcomes-compared-to-treating-everyone-the-same">Q2: "How would you validate that your CATE model actually improves business outcomes compared to treating everyone the same?"</h3>
+<p><strong>What they're testing</strong>: Do you know how to operationalize and validate HTE?
 <strong>Strong answer</strong>: "Run a three-arm experiment: (1) treat everyone (blanket rollout), (2) treat no one (control), (3) treat only the model-recommended users (targeted rollout). Compare total outcome across all three arms. If arm 3 achieves similar total outcomes to arm 1 but with fewer users treated, the targeting model adds value. An alternative is 'policy evaluation' using inverse propensity weighting on historical experimental data, but a prospective validation is gold standard."</p>
-<h3>Q3: "Your causal forest says feature X drives heterogeneity. But feature X is correlated with features Y and Z. How do you know X is the true moderator?"</h3>
-<p><strong>What they're testing</strong>: Can you distinguish association from moderation?<br />
+<h3 id="q3-your-causal-forest-says-feature-x-drives-heterogeneity-but-feature-x-is-correlated-with-features-y-and-z-how-do-you-know-x-is-the-true-moderator">Q3: "Your causal forest says feature X drives heterogeneity. But feature X is correlated with features Y and Z. How do you know X is the true moderator?"</h3>
+<p><strong>What they're testing</strong>: Can you distinguish association from moderation?
 <strong>Strong answer</strong>: "Causal forests identify which features best PREDICT treatment effect variation, not which causally MODERATE the effect. Feature X might be a proxy for the true moderator Y. To disentangle: (1) check partial dependence plots for each feature while controlling for others, (2) look at the causal forest's feature importance alongside domain knowledge, (3) if possible, design an experiment that varies X directly (e.g., if X is 'tenure', compare the effect at 3 months vs 12 months within the same experiment), (4) use the X-learner, which handles this more carefully than the T-learner."</p>
-<h3>Q4: "The PM wants to know: should we show the new algorithm to users where CATE &gt; 0 and hide it from users where CATE &lt; 0? What's wrong with this approach?"</h3>
-<p><strong>What they're testing</strong>: Do you understand the decision framework beyond just CATE sign?<br />
+<h3 id="q4-the-pm-wants-to-know-should-we-show-the-new-algorithm-to-users-where-cate-0-and-hide-it-from-users-where-cate-0-whats-wrong-with-this-approach">Q4: "The PM wants to know: should we show the new algorithm to users where CATE &gt; 0 and hide it from users where CATE &lt; 0? What's wrong with this approach?"</h3>
+<p><strong>What they're testing</strong>: Do you understand the decision framework beyond just CATE sign?
 <strong>Strong answer</strong>: "Three issues: (1) The CATE estimates have uncertainty. Users with CATE = -0.1 might actually have CATE = +0.5 -- we'd be withholding a beneficial treatment due to estimation noise. I'd use a confidence interval threshold (e.g., treat unless the UPPER bound of the CI is below some threshold). (2) There might be long-run effects not captured in the short-run CATE. Users who dislike the new algorithm initially might adapt. (3) There are ethical and UX concerns about showing different products to different users. I'd recommend treating users where CATE is clearly negative as a separate investigation -- WHY does the algorithm hurt them? Fix the algorithm for these users rather than just hiding it."</p>
-<h3>Q5: "What's the difference between a T-learner and an X-learner? When would you use each?"</h3>
-<p><strong>What they're testing</strong>: Technical depth on meta-learner methods.<br />
+<h3 id="q5-whats-the-difference-between-a-t-learner-and-an-x-learner-when-would-you-use-each">Q5: "What's the difference between a T-learner and an X-learner? When would you use each?"</h3>
+<p><strong>What they're testing</strong>: Technical depth on meta-learner methods.
 <strong>Strong answer</strong>: "T-learner trains separate outcome models for treated and control, then CATE = mu_1(x) - mu_0(x). It's simple but doesn't share information between arms and can be noisy when groups are imbalanced. X-learner improves this by: (1) training the two models, (2) using each model's predictions as pseudo-outcomes for the OTHER group to directly estimate individual treatment effects, (3) combining using a propensity-score-weighted average. X-learner is better when one group is much larger (e.g., 90% control, 10% treated) because it leverages the large group's information. I'd use T-learner for balanced experiments and X-learner for imbalanced ones or observational data."</p>
-<h3>Q6: "We ran an A/B test and the overall ATE is zero. But you're claiming there are heterogeneous effects. Isn't that just noise?"</h3>
-<p><strong>What they're testing</strong>: Do you understand that zero ATE can mask heterogeneity?<br />
+<h3 id="q6-we-ran-an-ab-test-and-the-overall-ate-is-zero-but-youre-claiming-there-are-heterogeneous-effects-isnt-that-just-noise">Q6: "We ran an A/B test and the overall ATE is zero. But you're claiming there are heterogeneous effects. Isn't that just noise?"</h3>
+<p><strong>What they're testing</strong>: Do you understand that zero ATE can mask heterogeneity?
 <strong>Strong answer</strong>: "Not necessarily noise. A zero ATE can mean the treatment helps some users and hurts others in equal measure -- the average washes out. I'd check: (1) is the variance of the CATE estimates significantly larger than what we'd expect under a constant zero effect? (Best Linearization test), (2) do the estimated CATEs predict outcomes in a holdout sample? If yes, the heterogeneity is real. (3) is there a clear monotonic pattern (e.g., CATE increases with tenure) or is it random? Domain-consistent patterns are more credible. If there truly are winners and losers canceling out, this is a VERY important finding -- it means we should target the treatment, not abandon it."</p>
+
+    </article>
+    <footer class="doc-footer">
+      Rendered from Markdown — <a href="https://github.com/anuragreddygv323/causal_inference">causal_inference</a>
+    </footer>
+  </div>
 </body>
 </html>

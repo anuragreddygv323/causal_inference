@@ -1,37 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Causal Inference Notes</title>
-<style>
-body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.55;max-width:52rem;margin:2rem auto;padding:0 1.25rem;color:#1a1a1a;}
-h1,h2,h3,h4{border-bottom:1px solid #eee;padding-bottom:.2em;margin-top:1.4em;}
-code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em;}
-pre{background:#f6f8fa;padding:1rem;border-radius:8px;overflow-x:auto;border:1px solid #e1e4e8;}
-table{border-collapse:collapse;width:100%;margin:1rem 0;font-size:.95em;}
-th,td{border:1px solid #ddd;padding:.45rem .6rem;text-align:left;}
-th{background:#f0f0f0;}
-blockquote{border-left:4px solid #ccc;margin:1rem 0;padding-left:1rem;color:#444;}
-a{color:#0969da;}
-hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#080c14">
+  <title>Causal Inference — Detailed Notes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/notes-theme.css">
+  <link rel="stylesheet" href="assets/pygments-monokai.css">
 </head>
 <body>
-<h1>Causal Inference -- Detailed Notes</h1>
-<h2>Table of Contents</h2>
+  <div class="doc-shell">
+    <header class="doc-header">
+      <div class="doc-header-inner">
+        <p class="doc-kicker">Causal inference</p>
+        <h1 class="doc-title">Causal Inference — Detailed Notes</h1>
+        <p class="doc-subtitle">Methods, assumptions, decision frameworks, and links to runnable notebooks.</p>
+        <div class="doc-meta"><span class="doc-pill">Observational &amp; quasi-experimental</span><span class="doc-pill">Industry-flavored examples</span></div>
+      </div>
+    </header>
+    <article class="content">
+<h2 id="table-of-contents">Table of Contents</h2>
 <ol>
 <li><a href="#1-core-problem-framing">Core Problem Framing</a></li>
-<li><a href="#2-causal-inference-methods">Causal Inference Methods</a><br />
-   - 2.1 <a href="#21-propensity-score-matching-psm">Propensity Score Matching (PSM)</a><br />
-   - 2.2 <a href="#22-difference-in-differences-did">Difference-in-Differences (DiD)</a><br />
-   - 2.3 <a href="#23-synthetic-control">Synthetic Control</a><br />
-   - 2.4 <a href="#24-interrupted-time-series-its">Interrupted Time Series (ITS)</a><br />
-   - 2.5 <a href="#25-instrumental-variables-iv">Instrumental Variables (IV)</a><br />
-   - 2.6 <a href="#26-regression-discontinuity-design-rdd">Regression Discontinuity Design (RDD)</a><br />
-   - 2.7 <a href="#27-heterogeneous-treatment-effects-hte">Heterogeneous Treatment Effects (HTE)</a><br />
-   - 2.8 <a href="#28-uplift-modeling">Uplift Modeling</a><br />
-   - 2.9 <a href="#29-complier-average-causal-effect-cace--late">Complier Average Causal Effect (CACE / LATE)</a></li>
+<li><a href="#2-causal-inference-methods">Causal Inference Methods</a><ul>
+<li>2.1 <a href="#21-propensity-score-matching-psm">Propensity Score Matching (PSM)</a></li>
+<li>2.2 <a href="#22-difference-in-differences-did">Difference-in-Differences (DiD)</a></li>
+<li>2.3 <a href="#23-synthetic-control">Synthetic Control</a></li>
+<li>2.4 <a href="#24-interrupted-time-series-its">Interrupted Time Series (ITS)</a></li>
+<li>2.5 <a href="#25-instrumental-variables-iv">Instrumental Variables (IV)</a></li>
+<li>2.6 <a href="#26-regression-discontinuity-design-rdd">Regression Discontinuity Design (RDD)</a></li>
+<li>2.7 <a href="#27-heterogeneous-treatment-effects-hte">Heterogeneous Treatment Effects (HTE)</a></li>
+<li>2.8 <a href="#28-uplift-modeling">Uplift Modeling</a></li>
+<li>2.9 <a href="#29-complier-average-causal-effect-cace--late">Complier Average Causal Effect (CACE / LATE)</a></li>
+</ul>
+</li>
 <li><a href="#3-causal-feature-attribution--drivers-analysis">Causal Feature Attribution / Drivers Analysis</a></li>
 <li><a href="#4-method-selection-decision-framework">Method Selection Decision Framework</a></li>
 <li><a href="#5-industry-references">Industry References</a></li>
@@ -39,24 +45,28 @@ hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
 <li><a href="#7-cross-reference-with-companion-notebooks">Cross-Reference with Companion Notebooks</a></li>
 </ol>
 <hr />
-<h2>1. Core Problem Framing</h2>
-<h3>1.1 The Fundamental Problem of Causal Inference</h3>
+<h2 id="1-core-problem-framing">1. Core Problem Framing</h2>
+<h3 id="11-the-fundamental-problem-of-causal-inference">1.1 The Fundamental Problem of Causal Inference</h3>
 <p>The central challenge in causal inference is that we can <strong>never observe both outcomes</strong> (treated and untreated) for the same unit at the same time. This is known as the <strong>fundamental problem of causal inference</strong> (Holland, 1986).</p>
 <ul>
-<li><strong>Potential Outcomes Framework (Rubin Causal Model)</strong>: For each unit <em>i</em>, there are two potential outcomes:</li>
+<li>
+<p><strong>Potential Outcomes Framework (Rubin Causal Model)</strong>: For each unit <em>i</em>, there are two potential outcomes:</p>
+<ul>
 <li>Y_i(1) = outcome if treated</li>
 <li>Y_i(0) = outcome if not treated</li>
 <li>The <strong>individual treatment effect</strong> is: tau_i = Y_i(1) - Y_i(0)</li>
-<li>
-<p>We only ever observe one of these. The other is the <strong>counterfactual</strong>.</p>
+<li>We only ever observe one of these. The other is the <strong>counterfactual</strong>.</li>
+</ul>
 </li>
 <li>
 <p><strong>The goal</strong>: Estimate the <strong>Average Treatment Effect (ATE)</strong>:</p>
-</li>
+<ul>
 <li>ATE = E[Y(1) - Y(0)]</li>
 <li>Since we can't observe both for the same person, we need methods to construct credible counterfactuals.</li>
 </ul>
-<h3>1.2 Confounders and Directed Acyclic Graphs (DAGs)</h3>
+</li>
+</ul>
+<h3 id="12-confounders-and-directed-acyclic-graphs-dags">1.2 Confounders and Directed Acyclic Graphs (DAGs)</h3>
 <p>A <strong>confounder</strong> is a variable that influences both the treatment assignment and the outcome. If confounders are not accounted for, the estimated treatment effect will be <strong>biased</strong>.</p>
 <div class="codehilite"><pre><span></span><code><span class="n">Confounder</span><span class="w"> </span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
 <span class="w">    </span><span class="o">|</span><span class="w">         </span><span class="err">\</span>
@@ -66,19 +76,21 @@ hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
 
 <ul>
 <li>X causes both T and Y. If we ignore X and simply compare treated vs. untreated outcomes, the difference reflects both the true causal effect of T on Y <strong>and</strong> the effect of X.</li>
-<li><strong>DAGs</strong> (Directed Acyclic Graphs) are the formal tool for mapping out these causal relationships. They help identify:</li>
+<li><strong>DAGs</strong> (Directed Acyclic Graphs) are the formal tool for mapping out these causal relationships. They help identify:<ul>
 <li>Which variables are confounders (must be controlled for)</li>
 <li>Which variables are mediators (should NOT be controlled for)</li>
 <li>Which variables are colliders (controlling for them introduces bias)</li>
 </ul>
-<h3>1.3 Pre-Period vs. Post-Period</h3>
+</li>
+</ul>
+<h3 id="13-pre-period-vs-post-period">1.3 Pre-Period vs. Post-Period</h3>
 <p>Many causal inference designs rely on a temporal structure:</p>
 <ul>
 <li><strong>Pre-period</strong>: The time before the treatment/intervention is introduced. Used to establish baseline behavior and verify that treated and control groups were comparable.</li>
 <li><strong>Post-period</strong>: The time after treatment. Outcomes here are compared across groups to estimate the causal effect.</li>
 </ul>
 <p>The quality of pre-period matching or parallel trends is critical to the credibility of most observational causal designs.</p>
-<h3>1.4 Treatment Definition</h3>
+<h3 id="14-treatment-definition">1.4 Treatment Definition</h3>
 <p>Precise definition of what constitutes "treatment" matters enormously:</p>
 <ul>
 <li><strong>Binary treatment</strong>: Did the user subscribe or not? Did they receive the discount or not?</li>
@@ -87,8 +99,8 @@ hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
 </ul>
 <p>For example, in a Game Pass study: a user must both claim access AND engage with titles within the first 30 days to be classified as "treated." Simply having access without engagement may not constitute meaningful treatment.</p>
 <hr />
-<h2>2. Causal Inference Methods</h2>
-<h3>2.1 Propensity Score Matching (PSM)</h3>
+<h2 id="2-causal-inference-methods">2. Causal Inference Methods</h2>
+<h3 id="21-propensity-score-matching-psm">2.1 Propensity Score Matching (PSM)</h3>
 <p><strong>What it is</strong>: A method for reducing selection bias in observational studies by matching treated and untreated units that have a similar probability (propensity) of receiving treatment.</p>
 <p><strong>Core idea</strong>: Instead of matching on many individual covariates (which becomes computationally prohibitive in high dimensions -- the "curse of dimensionality"), collapse all covariates into a single number:</p>
 <div class="codehilite"><pre><span></span><code>e(X) = P(Treatment = 1 | X)
@@ -102,10 +114,10 @@ hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
 <li><strong>Check balance</strong>: Verify that after matching, the distributions of covariates are similar across treated and control groups. Standardized mean differences should be small (&lt; 0.1).</li>
 <li><strong>Estimate the treatment effect</strong>: Compare outcomes between matched treated and control units.</li>
 </ol>
-<p><strong>Matching variants</strong>:<br />
-- <strong>Nearest-neighbor matching</strong>: Match each treated unit to the closest control unit on propensity score<br />
-- <strong>Caliper matching</strong>: Only match if the propensity score difference is within a threshold<br />
-- <strong>Exact matching</strong>: Require exact match on certain key variables (expensive, often infeasible)<br />
+<p><strong>Matching variants</strong>:
+- <strong>Nearest-neighbor matching</strong>: Match each treated unit to the closest control unit on propensity score
+- <strong>Caliper matching</strong>: Only match if the propensity score difference is within a threshold
+- <strong>Exact matching</strong>: Require exact match on certain key variables (expensive, often infeasible)
 - <strong>Fuzzy matching</strong>: Allow approximate matches when exact matching is too restrictive</p>
 <p><strong>Critical issues</strong>:</p>
 <ul>
@@ -114,15 +126,15 @@ hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
 <li><strong>Sample size loss</strong>: Matching inevitably reduces the sample. Starting with 10,000 units, you may end up with only 6,000 after matching. This is expected but must be accounted for in power calculations.</li>
 <li><strong>Unobserved confounders</strong>: PSM only handles observed confounders. If there are important unmeasured variables influencing both treatment and outcome, the estimate will still be biased.</li>
 </ul>
-<p><strong>Use case -- Subscription impact on revenue (Xbox Game Pass)</strong>:<br />
-- Treatment: User subscribes to Game Pass<br />
-- Outcome: Revenue contribution over the next 6 months<br />
-- Covariates for propensity score: Pre-subscription engagement (hours played, titles played, purchase history), demographics (age, region), platform tenure<br />
-- Match subscribers to non-subscribers with similar propensity scores<br />
+<p><strong>Use case -- Subscription impact on revenue (Xbox Game Pass)</strong>:
+- Treatment: User subscribes to Game Pass
+- Outcome: Revenue contribution over the next 6 months
+- Covariates for propensity score: Pre-subscription engagement (hours played, titles played, purchase history), demographics (age, region), platform tenure
+- Match subscribers to non-subscribers with similar propensity scores
 - Compare post-subscription revenue between matched groups to estimate the incremental revenue effect of Game Pass</p>
 <p><strong>Companion notebook</strong>: <a href="causal-inference-in-python-code-main/causal-inference-in-python/05-Propensity-Score.ipynb">05-Propensity-Score.ipynb</a></p>
 <hr />
-<h3>2.2 Difference-in-Differences (DiD)</h3>
+<h3 id="22-difference-in-differences-did">2.2 Difference-in-Differences (DiD)</h3>
 <p><strong>What it is</strong>: A quasi-experimental design that estimates causal effects by comparing the change in outcomes over time between a group that receives treatment and a group that does not.</p>
 <p><strong>Core idea</strong>: Even if treated and control groups differ in their baseline levels, as long as they would have followed <strong>parallel trends</strong> in the absence of treatment, we can attribute any divergence after treatment to the causal effect.</p>
 <div class="codehilite"><pre><span></span><code>Treatment Effect = (Y_treated_post - Y_treated_pre) - (Y_control_post - Y_control_pre)
@@ -134,29 +146,29 @@ hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
 <li><strong>Define groups</strong>: Identify treated and control groups</li>
 <li><strong>Define periods</strong>: Clearly specify pre-treatment and post-treatment time periods</li>
 <li><strong>Verify parallel trends</strong>: Plot pre-treatment outcomes for both groups and check they move in parallel</li>
-<li><strong>Estimate the DiD</strong>: Use regression with interaction terms:<br />
-   - Y = beta_0 + beta_1 * Treatment + beta_2 * Post + beta_3 * (Treatment x Post) + epsilon<br />
-   - beta_3 is the DiD estimate (the causal effect)</li>
+<li><strong>Estimate the DiD</strong>: Use regression with interaction terms:</li>
+<li>Y = beta_0 + beta_1 * Treatment + beta_2 * Post + beta_3 * (Treatment x Post) + epsilon</li>
+<li>beta_3 is the DiD estimate (the causal effect)</li>
 </ol>
-<p><strong>Extensions</strong>:<br />
-- <strong>Staggered DiD</strong>: When different units receive treatment at different times. Requires more careful econometric treatment (Callaway &amp; Sant'Anna, Sun &amp; Abraham).<br />
-- <strong>Multiple time periods</strong>: Average effects across many pre/post comparisons for robustness.<br />
+<p><strong>Extensions</strong>:
+- <strong>Staggered DiD</strong>: When different units receive treatment at different times. Requires more careful econometric treatment (Callaway &amp; Sant'Anna, Sun &amp; Abraham).
+- <strong>Multiple time periods</strong>: Average effects across many pre/post comparisons for robustness.
 - <strong>Event study design</strong>: Estimate the treatment effect at each time period relative to the treatment date to visualize the dynamic effect and verify pre-trends.</p>
-<p><strong>Use case -- Feature launch impact on MAU</strong>:<br />
-- A product team launches a new feature (e.g., personalized recommendations)<br />
-- Treated group: Users who were exposed to the feature<br />
-- Control group: Users who were not yet exposed<br />
-- Compare monthly active usage before and after the launch for both groups<br />
+<p><strong>Use case -- Feature launch impact on MAU</strong>:
+- A product team launches a new feature (e.g., personalized recommendations)
+- Treated group: Users who were exposed to the feature
+- Control group: Users who were not yet exposed
+- Compare monthly active usage before and after the launch for both groups
 - The DiD estimate captures the incremental impact of the feature on engagement</p>
-<p><strong>Use case -- Game title release into Game Pass</strong>:<br />
-- When a major title is added to Game Pass, measure its incremental revenue effect<br />
-- Treated: Users who engaged with the new title<br />
-- Control: Users who did not engage with it<br />
-- Compare revenue changes pre/post title release for both groups<br />
+<p><strong>Use case -- Game title release into Game Pass</strong>:
+- When a major title is added to Game Pass, measure its incremental revenue effect
+- Treated: Users who engaged with the new title
+- Control: Users who did not engage with it
+- Compare revenue changes pre/post title release for both groups
 - Must account for self-selection (users who engage may already be more active) -- combine with matching if needed</p>
 <p><strong>Companion notebook</strong>: <a href="causal-inference-in-python-code-main/causal-inference-in-python/08-Difference-in-Differences.ipynb">08-Difference-in-Differences.ipynb</a></p>
 <hr />
-<h3>2.3 Synthetic Control</h3>
+<h3 id="23-synthetic-control">2.3 Synthetic Control</h3>
 <p><strong>What it is</strong>: A method that constructs a "synthetic" version of the treated unit by finding an optimal weighted combination of untreated units. Primarily used when the treatment occurs at an aggregate level (a country, a region, a store) and there are multiple untreated units available as donors.</p>
 <p><strong>Core idea</strong>: Instead of finding one perfect control, create an artificial control by blending multiple untreated units so that the blend closely tracks the treated unit's pre-treatment outcomes.</p>
 <p><strong>How it works</strong>:</p>
@@ -165,56 +177,56 @@ hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
 <li><strong>Post-treatment period</strong>: Apply the same weights to the donor units' post-treatment outcomes to estimate what the treated unit's outcome would have been without treatment.</li>
 <li><strong>Treatment effect</strong>: The difference between the treated unit's actual post-treatment outcome and the synthetic control's outcome.</li>
 </ol>
-<p><strong>Key requirements</strong>:<br />
-- A pool of untreated units that were NOT affected by the treatment<br />
-- A sufficiently long pre-treatment period to achieve good fit<br />
+<p><strong>Key requirements</strong>:
+- A pool of untreated units that were NOT affected by the treatment
+- A sufficiently long pre-treatment period to achieve good fit
 - The treated unit's pre-treatment outcomes must lie within the "convex hull" of the donor units (i.e., the synthetic control cannot extrapolate)</p>
-<p><strong>Why it's powerful</strong>:<br />
-- Transparency: The weights are explicit, so you can see exactly which units contribute to the counterfactual<br />
-- Visual: The pre-treatment fit and post-treatment gap are easy to interpret on a time-series plot<br />
+<p><strong>Why it's powerful</strong>:
+- Transparency: The weights are explicit, so you can see exactly which units contribute to the counterfactual
+- Visual: The pre-treatment fit and post-treatment gap are easy to interpret on a time-series plot
 - Inference: Permutation-based inference (placebo tests) by applying the method to each donor unit and checking whether the treated unit's effect is unusually large</p>
-<p><strong>Use case -- Geo-level personalization launch</strong>:<br />
-- A company like Xbox operates in many countries. Personalization is launched in one country (e.g., Brazil).<br />
-- Build a synthetic Brazil from weighted combination of other countries (e.g., 40% Mexico + 30% Argentina + 20% Colombia + 10% Chile) that matched Brazil's pre-launch engagement patterns.<br />
+<p><strong>Use case -- Geo-level personalization launch</strong>:
+- A company like Xbox operates in many countries. Personalization is launched in one country (e.g., Brazil).
+- Build a synthetic Brazil from weighted combination of other countries (e.g., 40% Mexico + 30% Argentina + 20% Colombia + 10% Chile) that matched Brazil's pre-launch engagement patterns.
 - Post-launch, the gap between actual Brazil and synthetic Brazil is the estimated causal effect of personalization.</p>
-<p><strong>Use case -- Regional pricing change</strong>:<br />
-- Change subscription pricing in one region.<br />
-- Use other regions (that did not receive the price change) to build a synthetic control.<br />
+<p><strong>Use case -- Regional pricing change</strong>:
+- Change subscription pricing in one region.
+- Use other regions (that did not receive the price change) to build a synthetic control.
 - Estimate the causal effect of the price change on subscriber growth and revenue.</p>
 <p><strong>Companion notebook</strong>: <a href="causal-inference-in-python-code-main/causal-inference-in-python/09-Synthetic-Control.ipynb">09-Synthetic-Control.ipynb</a></p>
 <hr />
-<h3>2.4 Interrupted Time Series (ITS)</h3>
+<h3 id="24-interrupted-time-series-its">2.4 Interrupted Time Series (ITS)</h3>
 <p><strong>What it is</strong>: A design for estimating the effect of an intervention when you have many repeated observations of the outcome over time for a single unit, and the intervention occurs at a known point.</p>
 <p><strong>Core idea</strong>: Model the pre-intervention trend and extrapolate it forward. The difference between the extrapolated trend and the actual post-intervention outcomes is the estimated causal effect.</p>
 <p><strong>How it works</strong>:</p>
 <ol>
 <li><strong>Collect time-series data</strong>: Many data points before and after the intervention</li>
-<li><strong>Model the pre-intervention trend</strong>: Fit a regression (often segmented regression) to the pre-intervention data:<br />
-   - Y_t = beta_0 + beta_1 * time + epsilon (pre-intervention trend)</li>
-<li><strong>Model the post-intervention outcome</strong>:<br />
-   - Y_t = beta_0 + beta_1 * time + beta_2 * intervention + beta_3 * (time_since_intervention) + epsilon<br />
-   - beta_2 captures the <strong>immediate level change</strong> at the point of intervention<br />
-   - beta_3 captures the <strong>change in slope</strong> (trend change) after intervention</li>
+<li><strong>Model the pre-intervention trend</strong>: Fit a regression (often segmented regression) to the pre-intervention data:</li>
+<li>Y_t = beta_0 + beta_1 * time + epsilon (pre-intervention trend)</li>
+<li><strong>Model the post-intervention outcome</strong>:</li>
+<li>Y_t = beta_0 + beta_1 * time + beta_2 * intervention + beta_3 * (time_since_intervention) + epsilon</li>
+<li>beta_2 captures the <strong>immediate level change</strong> at the point of intervention</li>
+<li>beta_3 captures the <strong>change in slope</strong> (trend change) after intervention</li>
 <li><strong>Inference</strong>: Test whether beta_2 and/or beta_3 are statistically significant</li>
 </ol>
-<p><strong>Requirements</strong>:<br />
-- Many observations before and after the intervention (rule of thumb: at least 8-10 in each period, ideally many more)<br />
-- A clearly defined intervention point<br />
+<p><strong>Requirements</strong>:
+- Many observations before and after the intervention (rule of thumb: at least 8-10 in each period, ideally many more)
+- A clearly defined intervention point
 - No other major events co-occurring with the intervention (threatens internal validity)</p>
-<p><strong>Strengths and limitations</strong>:<br />
-- Strength: Only needs a single unit (no control group required)<br />
-- Limitation: Vulnerable to co-occurring events that could explain the change<br />
+<p><strong>Strengths and limitations</strong>:
+- Strength: Only needs a single unit (no control group required)
+- Limitation: Vulnerable to co-occurring events that could explain the change
 - Limitation: Relies on correct specification of the pre-trend model</p>
-<p><strong>Use case -- Marketing campaign impact</strong>:<br />
-- A company runs a major marketing campaign starting on a specific date<br />
-- Daily revenue is tracked for 60 days before and 60 days after<br />
+<p><strong>Use case -- Marketing campaign impact</strong>:
+- A company runs a major marketing campaign starting on a specific date
+- Daily revenue is tracked for 60 days before and 60 days after
 - Model the pre-campaign revenue trend and check whether the campaign caused a structural break (level shift and/or trend change) in daily revenue</p>
 <hr />
-<h3>2.5 Instrumental Variables (IV)</h3>
+<h3 id="25-instrumental-variables-iv">2.5 Instrumental Variables (IV)</h3>
 <p><strong>What it is</strong>: A method for estimating causal effects when there are unmeasured confounders, by exploiting a third variable (the "instrument") that affects treatment but has no direct effect on the outcome except through treatment.</p>
-<p><strong>Core idea</strong>: If you can't remove confounding directly, find a variable Z such that:<br />
-1. Z is correlated with the treatment T (<strong>relevance</strong>)<br />
-2. Z affects the outcome Y only through T (<strong>exclusion restriction</strong>)<br />
+<p><strong>Core idea</strong>: If you can't remove confounding directly, find a variable Z such that:
+1. Z is correlated with the treatment T (<strong>relevance</strong>)
+2. Z affects the outcome Y only through T (<strong>exclusion restriction</strong>)
 3. Z is not correlated with the unmeasured confounders (<strong>independence</strong>)</p>
 <div class="codehilite"><pre><span></span><code><span class="n">Instrument</span><span class="w"> </span><span class="p">(</span><span class="n">Z</span><span class="p">)</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">Treatment</span><span class="w"> </span><span class="p">(</span><span class="n">T</span><span class="p">)</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">Outcome</span><span class="w"> </span><span class="p">(</span><span class="n">Y</span><span class="p">)</span>
 <span class="w">                                       </span><span class="o">^</span>
@@ -225,31 +237,31 @@ hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
 <p>Z has no direct arrow to Y and no connection to U.</p>
 <p><strong>How it works (Two-Stage Least Squares / 2SLS)</strong>:</p>
 <ol>
-<li><strong>First stage</strong>: Regress treatment on the instrument:<br />
-   - T = alpha_0 + alpha_1 * Z + epsilon<br />
-   - Get predicted treatment values T_hat</li>
-<li><strong>Second stage</strong>: Regress outcome on predicted treatment:<br />
-   - Y = gamma_0 + gamma_1 * T_hat + eta<br />
-   - gamma_1 is the causal effect estimate (specifically, the LATE)</li>
+<li><strong>First stage</strong>: Regress treatment on the instrument:</li>
+<li>T = alpha_0 + alpha_1 * Z + epsilon</li>
+<li>Get predicted treatment values T_hat</li>
+<li><strong>Second stage</strong>: Regress outcome on predicted treatment:</li>
+<li>Y = gamma_0 + gamma_1 * T_hat + eta</li>
+<li>gamma_1 is the causal effect estimate (specifically, the LATE)</li>
 </ol>
-<p><strong>Classic examples of instruments</strong>:<br />
-- Random assignment as an instrument for actual treatment (when there is non-compliance)<br />
-- Distance to a facility as an instrument for facility usage<br />
+<p><strong>Classic examples of instruments</strong>:
+- Random assignment as an instrument for actual treatment (when there is non-compliance)
+- Distance to a facility as an instrument for facility usage
 - Weather as an instrument for outdoor activities</p>
-<p><strong>Use case -- Non-compliance in experiments</strong>:<br />
-- Users are randomly assigned to receive a discount offer (Z = assignment)<br />
-- Some users don't redeem the discount (T = actual redemption)<br />
-- Outcome is subsequent spending (Y)<br />
-- Assignment (Z) is random, so it's independent of confounders<br />
-- Use assignment as an instrument for actual discount usage<br />
+<p><strong>Use case -- Non-compliance in experiments</strong>:
+- Users are randomly assigned to receive a discount offer (Z = assignment)
+- Some users don't redeem the discount (T = actual redemption)
+- Outcome is subsequent spending (Y)
+- Assignment (Z) is random, so it's independent of confounders
+- Use assignment as an instrument for actual discount usage
 - The IV estimate tells us the causal effect of actually using the discount among those who would comply with their assignment</p>
 <p><strong>Companion notebook</strong>: <a href="causal-inference-in-python-code-main/causal-inference-in-python/11-Non-Compliance-and-Instruments.ipynb">11-Non-Compliance-and-Instruments.ipynb</a></p>
 <hr />
-<h3>2.6 Regression Discontinuity Design (RDD)</h3>
+<h3 id="26-regression-discontinuity-design-rdd">2.6 Regression Discontinuity Design (RDD)</h3>
 <p><strong>What it is</strong>: A quasi-experimental design that exploits a known cutoff (threshold) in a continuous assignment variable to estimate causal effects. Units just above the cutoff receive treatment; units just below do not.</p>
 <p><strong>Core idea</strong>: Units just above and just below the cutoff are essentially randomly assigned to treatment (since their position relative to the cutoff is as-if random). Comparing their outcomes gives a local causal estimate.</p>
-<p><strong>Two types</strong>:<br />
-- <strong>Sharp RDD</strong>: Treatment is a deterministic function of the running variable. Everyone above the cutoff gets treatment; no one below does.<br />
+<p><strong>Two types</strong>:
+- <strong>Sharp RDD</strong>: Treatment is a deterministic function of the running variable. Everyone above the cutoff gets treatment; no one below does.
 - <strong>Fuzzy RDD</strong>: The probability of treatment jumps at the cutoff but doesn't go from 0 to 1. Some units above the cutoff don't get treatment, and/or some below do. Uses IV-like estimation.</p>
 <p><strong>How it works</strong>:</p>
 <ol>
@@ -259,37 +271,37 @@ hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
 <li><strong>Bandwidth selection</strong>: Choose how far from the cutoff to include observations (trade-off between bias and variance)</li>
 </ol>
 <p><strong>Key assumption -- Continuity</strong>: In the absence of treatment, the expected potential outcomes would be continuous through the cutoff. There should be no other reason for a jump at that exact point.</p>
-<p><strong>Use case -- Loyalty tier thresholds</strong>:<br />
-- Users who spend above $500 per quarter receive a premium loyalty tier with extra benefits<br />
-- Compare outcomes (retention, future spending) of users just above $500 vs. just below<br />
+<p><strong>Use case -- Loyalty tier thresholds</strong>:
+- Users who spend above $500 per quarter receive a premium loyalty tier with extra benefits
+- Compare outcomes (retention, future spending) of users just above $500 vs. just below
 - Since users near the threshold are very similar, the difference in outcomes estimates the causal effect of receiving premium tier status</p>
 <hr />
-<h3>2.7 Heterogeneous Treatment Effects (HTE)</h3>
+<h3 id="27-heterogeneous-treatment-effects-hte">2.7 Heterogeneous Treatment Effects (HTE)</h3>
 <p><strong>What it is</strong>: The recognition that treatment effects are not uniform across all individuals. Different subgroups may experience larger or smaller (or even opposite) effects from the same treatment.</p>
 <p><strong>Core idea</strong>: Move beyond a single ATE to estimate <strong>Conditional Average Treatment Effects (CATE)</strong> -- the treatment effect conditional on observable characteristics:</p>
 <div class="codehilite"><pre><span></span><code>CATE(x) = E[Y(1) - Y(0) | X = x]
 </code></pre></div>
 
-<p><strong>Why it matters</strong>:<br />
-- A positive ATE could mask the fact that treatment helps some people and hurts others<br />
-- Targeting: Resources are finite. If you know which subgroups benefit most, you can target treatment to maximize impact.<br />
+<p><strong>Why it matters</strong>:
+- A positive ATE could mask the fact that treatment helps some people and hurts others
+- Targeting: Resources are finite. If you know which subgroups benefit most, you can target treatment to maximize impact.
 - Personalization: In the subscription/gaming context, which types of users benefit most from a particular feature or offer?</p>
-<p><strong>Methods for estimating HTE</strong>:<br />
-- <strong>Subgroup analysis</strong>: Simple but atheoretical; risk of p-hacking<br />
-- <strong>Causal forests</strong> (Wager &amp; Athey): Random forest adapted for treatment effect estimation<br />
-- <strong>Meta-learners</strong> (T-learner, S-learner, X-learner, R-learner): Different strategies for combining prediction models to estimate heterogeneous effects<br />
+<p><strong>Methods for estimating HTE</strong>:
+- <strong>Subgroup analysis</strong>: Simple but atheoretical; risk of p-hacking
+- <strong>Causal forests</strong> (Wager &amp; Athey): Random forest adapted for treatment effect estimation
+- <strong>Meta-learners</strong> (T-learner, S-learner, X-learner, R-learner): Different strategies for combining prediction models to estimate heterogeneous effects
 - <strong>Bayesian Additive Regression Trees (BART)</strong>: Flexible nonparametric approach</p>
-<p><strong>Use case -- Personalized offers</strong>:<br />
-- Not all users respond the same to a 20% discount<br />
-- Heavy users might subscribe anyway (low incremental effect)<br />
-- Light users might need a bigger nudge (high incremental effect)<br />
-- Lapsed users might be re-engaged (moderate effect with high variance)<br />
+<p><strong>Use case -- Personalized offers</strong>:
+- Not all users respond the same to a 20% discount
+- Heavy users might subscribe anyway (low incremental effect)
+- Light users might need a bigger nudge (high incremental effect)
+- Lapsed users might be re-engaged (moderate effect with high variance)
 - Estimate CATE for each user segment to optimize offer allocation</p>
-<p><strong>Companion notebooks</strong>:<br />
-- <a href="causal-inference-in-python-code-main/causal-inference-in-python/06-Effect-Heterogeneity.ipynb">06-Effect-Heterogeneity.ipynb</a><br />
+<p><strong>Companion notebooks</strong>:
+- <a href="causal-inference-in-python-code-main/causal-inference-in-python/06-Effect-Heterogeneity.ipynb">06-Effect-Heterogeneity.ipynb</a>
 - <a href="causal-inference-in-python-code-main/causal-inference-in-python/07-Meta-Learners.ipynb">07-Meta-Learners.ipynb</a></p>
 <hr />
-<h3>2.8 Uplift Modeling</h3>
+<h3 id="28-uplift-modeling">2.8 Uplift Modeling</h3>
 <p><strong>What it is</strong>: A predictive modeling approach that directly estimates the incremental impact of a treatment (e.g., a marketing action) on an individual's behavior. It answers: "What is the right offer for the right person?"</p>
 <p><strong>Core idea</strong>: Classify individuals into four categories based on their response to treatment:</p>
 <table>
@@ -329,17 +341,17 @@ hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
 </tbody>
 </table>
 <p>The goal is to identify <strong>persuadables</strong> -- people for whom the treatment makes a positive difference.</p>
-<p><strong>Methods</strong>:<br />
-- <strong>Two-model approach (T-learner)</strong>: Train separate models for treated and control. Uplift = P(outcome | treated) - P(outcome | control).<br />
-- <strong>Single-model approach</strong>: Include treatment as a feature in one model<br />
+<p><strong>Methods</strong>:
+- <strong>Two-model approach (T-learner)</strong>: Train separate models for treated and control. Uplift = P(outcome | treated) - P(outcome | control).
+- <strong>Single-model approach</strong>: Include treatment as a feature in one model
 - <strong>Direct uplift models</strong>: Modified tree-based algorithms that directly optimize for uplift (e.g., causal trees)</p>
-<p><strong>Use case -- Marketing spend optimization</strong>:<br />
-- A company has run multiple campaigns with different discount levels (10%, 20%, 30% off) and different channels (email, push notification, in-app)<br />
-- For each customer, estimate the incremental lift in conversion (or revenue) from each offer type<br />
+<p><strong>Use case -- Marketing spend optimization</strong>:
+- A company has run multiple campaigns with different discount levels (10%, 20%, 30% off) and different channels (email, push notification, in-app)
+- For each customer, estimate the incremental lift in conversion (or revenue) from each offer type
 - Allocate the optimal offer to each customer to maximize total ROI while controlling cost</p>
 <p><strong>Connection to HTE</strong>: Uplift modeling is essentially the operational application of heterogeneous treatment effect estimation. HTE gives you the estimates; uplift modeling turns those estimates into targeting decisions.</p>
 <hr />
-<h3>2.9 Complier Average Causal Effect (CACE / LATE)</h3>
+<h3 id="29-complier-average-causal-effect-cace-late">2.9 Complier Average Causal Effect (CACE / LATE)</h3>
 <p><strong>What it is</strong>: The causal effect estimated specifically among "compliers" -- individuals who take the treatment when assigned to treatment and don't take it when assigned to control.</p>
 <p><strong>Context -- Non-compliance</strong>: In many experiments, not everyone in the treatment group actually receives/uses the treatment, and some in the control group may find a way to get it. This creates four types of participants:</p>
 <table>
@@ -373,21 +385,21 @@ hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
 </tr>
 </tbody>
 </table>
-<p><strong>Why CACE matters</strong>:<br />
-- <strong>Intent-to-Treat (ITT)</strong>: Compares outcomes by assignment, regardless of compliance. Unbiased but diluted (underestimates the effect for those who actually comply).<br />
-- <strong>CACE/LATE</strong>: Estimates the effect for compliers specifically. More relevant for understanding the actual treatment effect but applies only to the complier subpopulation.<br />
+<p><strong>Why CACE matters</strong>:
+- <strong>Intent-to-Treat (ITT)</strong>: Compares outcomes by assignment, regardless of compliance. Unbiased but diluted (underestimates the effect for those who actually comply).
+- <strong>CACE/LATE</strong>: Estimates the effect for compliers specifically. More relevant for understanding the actual treatment effect but applies only to the complier subpopulation.
 - Estimated using instrumental variables, with random assignment as the instrument for actual treatment.</p>
-<p><strong>Use case -- Game Pass trial</strong>:<br />
-- Users are randomly offered a free Game Pass trial (assignment = instrument)<br />
-- Some accept and use it (compliers); others ignore the offer (never-takers)<br />
-- Some users in the control group find ways to access Game Pass anyway (always-takers)<br />
-- ITT would underestimate the effect because many assigned-to-treatment users didn't actually engage<br />
+<p><strong>Use case -- Game Pass trial</strong>:
+- Users are randomly offered a free Game Pass trial (assignment = instrument)
+- Some accept and use it (compliers); others ignore the offer (never-takers)
+- Some users in the control group find ways to access Game Pass anyway (always-takers)
+- ITT would underestimate the effect because many assigned-to-treatment users didn't actually engage
 - CACE gives the effect of Game Pass specifically for users who would use it when offered</p>
 <hr />
-<h2>3. Causal Feature Attribution / Drivers Analysis</h2>
+<h2 id="3-causal-feature-attribution-drivers-analysis">3. Causal Feature Attribution / Drivers Analysis</h2>
 <p><strong>What it is</strong>: Identifying which features or behaviors are <strong>causally driving</strong> an outcome (such as churn, revenue, or engagement), as opposed to merely being correlated with it.</p>
-<p><strong>Why prediction is not enough</strong>: A machine learning model might identify that "number of support tickets" is a strong predictor of churn. But does filing tickets <em>cause</em> churn, or do users who are already dissatisfied (and about to churn) file more tickets? The policy implications are completely different:<br />
-- If tickets cause churn: improve support quality<br />
+<p><strong>Why prediction is not enough</strong>: A machine learning model might identify that "number of support tickets" is a strong predictor of churn. But does filing tickets <em>cause</em> churn, or do users who are already dissatisfied (and about to churn) file more tickets? The policy implications are completely different:
+- If tickets cause churn: improve support quality
 - If dissatisfaction causes both: address root causes of dissatisfaction</p>
 <p><strong>Causal vs. predictive feature importance</strong>:</p>
 <table>
@@ -421,24 +433,24 @@ hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
 </tr>
 </tbody>
 </table>
-<p><strong>How causal feature attribution works</strong>:<br />
-1. <strong>Construct a causal graph</strong> (DAG) encoding domain knowledge about which variables affect which<br />
-2. <strong>For each feature of interest</strong>, estimate its causal effect on the outcome while controlling for appropriate confounders (identified from the DAG)<br />
-3. <strong>Account for interactions</strong>: A feature's causal impact may depend on other variables. For example, the effect of "engagement with title X" on churn may depend on whether the user also plays other titles.<br />
+<p><strong>How causal feature attribution works</strong>:
+1. <strong>Construct a causal graph</strong> (DAG) encoding domain knowledge about which variables affect which
+2. <strong>For each feature of interest</strong>, estimate its causal effect on the outcome while controlling for appropriate confounders (identified from the DAG)
+3. <strong>Account for interactions</strong>: A feature's causal impact may depend on other variables. For example, the effect of "engagement with title X" on churn may depend on whether the user also plays other titles.
 4. <strong>Rank features by causal impact</strong>: This gives actionable insights -- e.g., "increasing engagement with multiplayer features causally reduces churn by 15%, after accounting for self-selection"</p>
-<p><strong>Tools</strong>:<br />
-- <strong>DoWhy</strong> (Microsoft Research): Python library for causal inference -- model, identify, estimate, refute<br />
-- <strong>EconML</strong> (Microsoft Research): ML-based causal effect estimation, including causal forests and DML<br />
-- <strong>CausalML</strong> (Uber): Uplift modeling and causal inference library<br />
+<p><strong>Tools</strong>:
+- <strong>DoWhy</strong> (Microsoft Research): Python library for causal inference -- model, identify, estimate, refute
+- <strong>EconML</strong> (Microsoft Research): ML-based causal effect estimation, including causal forests and DML
+- <strong>CausalML</strong> (Uber): Uplift modeling and causal inference library
 - <strong>Bayesian networks / probabilistic graphical models</strong>: Encode causal structure and perform inference</p>
-<p><strong>Use case -- Churn driver analysis</strong>:<br />
-- For a gaming/subscription platform, behavioral features include: hours played, titles tried, multiplayer sessions, store purchases, friend list activity, support tickets, days since last login<br />
-- For each feature, estimate the causal reduction in churn probability<br />
-- Unlike standard feature importance (which conflates correlation and causation), this accounts for the fact that, e.g., users who buy from the store may already be more engaged (confounder)<br />
+<p><strong>Use case -- Churn driver analysis</strong>:
+- For a gaming/subscription platform, behavioral features include: hours played, titles tried, multiplayer sessions, store purchases, friend list activity, support tickets, days since last login
+- For each feature, estimate the causal reduction in churn probability
+- Unlike standard feature importance (which conflates correlation and causation), this accounts for the fact that, e.g., users who buy from the store may already be more engaged (confounder)
 - Result: A ranked list of behaviors that, if increased, would causally reduce churn -- directly actionable for product teams</p>
 <hr />
-<h2>4. Method Selection Decision Framework</h2>
-<h3>Decision Tree</h3>
+<h2 id="4-method-selection-decision-framework">4. Method Selection Decision Framework</h2>
+<h3 id="decision-tree">Decision Tree</h3>
 <div class="codehilite"><pre><span></span><code><span class="n">Start</span><span class="o">:</span><span class="w"> </span><span class="n">What</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="n">you</span><span class="w"> </span><span class="n">have</span><span class="o">?</span>
 <span class="o">|</span>
 <span class="o">|--</span><span class="w"> </span><span class="n">Randomized</span><span class="w"> </span><span class="n">experiment</span><span class="w"> </span><span class="n">available</span><span class="o">?</span>
@@ -459,7 +471,7 @@ hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
 <span class="o">|</span><span class="w">           </span><span class="o">|</span><span class="w">       </span><span class="o">|--</span><span class="w"> </span><span class="n">Unmeasured</span><span class="w"> </span><span class="n">confounders</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">Instrumental</span><span class="w"> </span><span class="n">Variables</span>
 </code></pre></div>
 
-<h3>Quick-Reference Table</h3>
+<h3 id="quick-reference-table">Quick-Reference Table</h3>
 <table>
 <thead>
 <tr>
@@ -537,68 +549,68 @@ hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
 </tbody>
 </table>
 <hr />
-<h2>5. Industry References</h2>
-<h3>Netflix</h3>
+<h2 id="5-industry-references">5. Industry References</h2>
+<h3 id="netflix">Netflix</h3>
 <ul>
 <li>One of the most advanced experimentation and causal inference teams in industry</li>
 <li>Published extensively on their <strong>research blog</strong> about experimentation platform design, interleaving for ranking, and causal inference for content decisions</li>
 <li>Key contribution: Scaling experimentation to millions of simultaneous A/B tests with proper statistical rigor</li>
 <li>Focus: Content recommendation, UI optimization, long-term subscriber retention</li>
 </ul>
-<h3>Uber</h3>
+<h3 id="uber">Uber</h3>
 <ul>
 <li>Published work on <strong>observational causal inference</strong> when A/B testing is infeasible (e.g., pricing, marketplace dynamics)</li>
 <li><strong>Targeting optimization and bidding</strong>: Using causal methods to optimize rider/driver matching and promotional targeting</li>
 <li>Key conferences: Papers on causal inference applied to marketplace dynamics at KDD, NeurIPS</li>
 </ul>
-<h3>Facebook (Meta)</h3>
+<h3 id="facebook-meta">Facebook (Meta)</h3>
 <ul>
 <li>Research on <strong>long-term return on investment</strong> -- measuring the causal impact of features that play out over months or years</li>
 <li><strong>Reinforcement learning in practice</strong>: Combining causal reasoning with sequential decision-making</li>
 <li>Key contribution: Interference in experiments (network effects in social platforms where one user's treatment affects another's outcomes)</li>
 </ul>
-<h3>TripAdvisor</h3>
+<h3 id="tripadvisor">TripAdvisor</h3>
 <ul>
 <li><strong>Customer segmentation with recommendation A/B tests</strong>: Using causal inference to understand which user segments benefit from personalized recommendations</li>
 <li>Practical application of HTE in a travel/recommendation context</li>
 </ul>
-<h3>Microsoft / Xbox</h3>
+<h3 id="microsoft-xbox">Microsoft / Xbox</h3>
 <ul>
 <li><strong>Game Pass incremental revenue</strong>: Measuring the causal effect of Game Pass on user spending, engagement, and retention</li>
 <li><strong>Feature launch impact</strong>: Using DiD and synthetic control for product launches</li>
 <li><strong>Geo-experiments</strong>: Testing pricing and feature changes across different markets</li>
 <li><strong>DoWhy and EconML</strong>: Open-source causal inference libraries built by Microsoft Research</li>
 </ul>
-<h3>Airbnb</h3>
+<h3 id="airbnb">Airbnb</h3>
 <ul>
 <li>Pioneer of <strong>centralized experimentation platforms</strong> in the data science organization</li>
 <li>Published on challenges of experimentation in marketplaces (two-sided markets with interference)</li>
 <li>Focus on "central data science" team structure -- embedding causal thinking across the organization</li>
 </ul>
 <hr />
-<h2>6. Key Pitfalls and Practical Advice</h2>
-<h3>Propensity Score Calibration</h3>
+<h2 id="6-key-pitfalls-and-practical-advice">6. Key Pitfalls and Practical Advice</h2>
+<h3 id="propensity-score-calibration">Propensity Score Calibration</h3>
 <p>Calibration of the propensity score model is <strong>critical</strong> and must be verified before proceeding to matching. A model that predicts treatment with 95% accuracy but produces scores clustered at 0 and 1 will not yield useful matches. Use calibration plots and the Brier score to assess.</p>
-<h3>Balance Checking After Matching</h3>
+<h3 id="balance-checking-after-matching">Balance Checking After Matching</h3>
 <p>After matching, always check that the distributions of covariates are balanced between treated and control groups. Use standardized mean differences (SMD &lt; 0.1 is a common threshold) and visual inspections (density plots, Love plots). If balance is poor, revisit the propensity score model or try different matching strategies.</p>
-<h3>Sample Size Loss</h3>
+<h3 id="sample-size-loss">Sample Size Loss</h3>
 <p>Matching inevitably discards unmatched units. Starting with 10,000 users, you might end up with 6,000 after matching. This is a necessary trade-off between bias reduction and statistical power. Plan for this in advance and ensure you still have sufficient sample size for meaningful inference.</p>
-<h3>Confounder Identification</h3>
+<h3 id="confounder-identification">Confounder Identification</h3>
 <p>The most dangerous confounders are those that affect both treatment and outcome. In a DAG, these are "backdoor paths." Miss an important confounder and your estimate is biased, no matter how sophisticated the method. Invest time in understanding the data-generating process through domain expertise and DAG construction.</p>
-<h3>Prediction is Not Causation</h3>
-<p>Feature importance from a predictive ML model (XGBoost, random forest) tells you what is <em>associated</em> with the outcome, not what <em>causes</em> it. A feature may be highly predictive because it is:<br />
-- A confounder (causes both treatment and outcome)<br />
-- A collider (spuriously appears important when conditioned on)<br />
+<h3 id="prediction-is-not-causation">Prediction is Not Causation</h3>
+<p>Feature importance from a predictive ML model (XGBoost, random forest) tells you what is <em>associated</em> with the outcome, not what <em>causes</em> it. A feature may be highly predictive because it is:
+- A confounder (causes both treatment and outcome)
+- A collider (spuriously appears important when conditioned on)
 - A proxy for the true cause</p>
 <p>Acting on predictive associations without causal reasoning can lead to ineffective or counterproductive interventions.</p>
-<h3>Verification and Critical Thinking</h3>
-<p>Causal claims require more scrutiny than predictive claims because they inform <strong>interventions</strong> (actions with real costs). Always:<br />
-- Perform sensitivity analyses (how robust are results to violations of assumptions?)<br />
-- Run placebo tests (apply the method to a period/unit where no effect should exist)<br />
-- Validate against experiments when possible<br />
+<h3 id="verification-and-critical-thinking">Verification and Critical Thinking</h3>
+<p>Causal claims require more scrutiny than predictive claims because they inform <strong>interventions</strong> (actions with real costs). Always:
+- Perform sensitivity analyses (how robust are results to violations of assumptions?)
+- Run placebo tests (apply the method to a period/unit where no effect should exist)
+- Validate against experiments when possible
 - Question whether the key assumptions (parallel trends, exclusion restriction, unconfoundedness) are plausible in your specific context</p>
 <hr />
-<h2>7. Cross-Reference with Companion Notebooks</h2>
+<h2 id="7-cross-reference-with-companion-notebooks">7. Cross-Reference with Companion Notebooks</h2>
 <p>The workspace includes notebooks from the O'Reilly book <em>Causal Inference in Python</em> that provide hands-on implementations of these methods.</p>
 <table>
 <thead>
@@ -666,7 +678,13 @@ hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
 </tr>
 </tbody>
 </table>
-<p>All notebooks are in: <code>causal-inference-in-python-code-main/causal-inference-in-python/</code><br />
+<p>All notebooks are in: <code>causal-inference-in-python-code-main/causal-inference-in-python/</code>
 All datasets are in: <code>causal-inference-in-python-code-main/causal-inference-in-python/data/</code></p>
+
+    </article>
+    <footer class="doc-footer">
+      Rendered from Markdown — <a href="https://github.com/anuragreddygv323/causal_inference">causal_inference</a>
+    </footer>
+  </div>
 </body>
 </html>

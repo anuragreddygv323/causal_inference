@@ -1,39 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>06-regression-discontinuity — README</title>
-<style>
-body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.55;max-width:52rem;margin:2rem auto;padding:0 1.25rem;color:#1a1a1a;}
-h1,h2,h3,h4{border-bottom:1px solid #eee;padding-bottom:.2em;margin-top:1.4em;}
-code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em;}
-pre{background:#f6f8fa;padding:1rem;border-radius:8px;overflow-x:auto;border:1px solid #e1e4e8;}
-table{border-collapse:collapse;width:100%;margin:1rem 0;font-size:.95em;}
-th,td{border:1px solid #ddd;padding:.45rem .6rem;text-align:left;}
-th{background:#f0f0f0;}
-blockquote{border-left:4px solid #ccc;margin:1rem 0;padding-left:1rem;color:#444;}
-a{color:#0969da;}
-hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#080c14">
+  <title>Regression Discontinuity Design (RDD)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/notes-theme.css">
+  <link rel="stylesheet" href="../../assets/pygments-monokai.css">
 </head>
 <body>
-<h1>Regression Discontinuity Design (RDD)</h1>
-<h2>What It Is and When to Use It</h2>
+  <div class="doc-shell">
+    <header class="doc-header">
+      <div class="doc-header-inner">
+        <p class="doc-kicker">Method 06</p>
+        <h1 class="doc-title">Regression Discontinuity Design (RDD)</h1>
+        <p class="doc-subtitle">When to use it, assumptions, checks, and alternatives.</p>
+        <div class="doc-meta"><span class="doc-pill">Companion notebooks in repo</span></div>
+      </div>
+    </header>
+    <article class="content">
+<h2 id="what-it-is-and-when-to-use-it">What It Is and When to Use It</h2>
 <p>RDD exploits a known cutoff in a continuous running variable. Units just above and just below the cutoff are essentially randomly assigned to treatment and control. Comparing their outcomes estimates the <strong>local average treatment effect (LATE)</strong> at the cutoff.</p>
 <p>The core insight: if assignment to treatment is determined by whether a continuous score crosses a threshold, then units just on either side of that threshold are nearly identical in all respects — except for treatment status. This mimics a local randomized experiment.</p>
-<p><strong>Use when:</strong><br />
-- Treatment is assigned by a sharp, known threshold on a continuous running variable<br />
-- You observe the running variable for all units<br />
+<p><strong>Use when:</strong>
+- Treatment is assigned by a sharp, known threshold on a continuous running variable
+- You observe the running variable for all units
 - Units cannot precisely manipulate the running variable to sort above/below the cutoff</p>
-<p><strong>Do NOT use when:</strong><br />
-- No threshold exists → use PSM or DiD<br />
-- Treatment is voluntary and unrelated to a score → use PSM or IV<br />
-- The running variable is discrete with very few values (undermines the continuity assumption)<br />
+<p><strong>Do NOT use when:</strong>
+- No threshold exists → use PSM or DiD
+- Treatment is voluntary and unrelated to a score → use PSM or IV
+- The running variable is discrete with very few values (undermines the continuity assumption)
 - Units can easily manipulate the running variable to land just above the cutoff</p>
 <hr />
-<h2>Industry Use Cases</h2>
-<h3>Use Case 1: Airbnb — Superhost Status Threshold</h3>
+<h2 id="industry-use-cases">Industry Use Cases</h2>
+<h3 id="use-case-1-airbnb-superhost-status-threshold">Use Case 1: Airbnb — Superhost Status Threshold</h3>
 <table>
 <thead>
 <tr>
@@ -61,12 +65,12 @@ hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
 </tbody>
 </table>
 <p><strong>Why RDD:</strong> The Superhost badge is deterministically assigned based on whether the host's average review score meets or exceeds 4.8. Hosts scoring 4.79 vs 4.81 are nearly identical in quality, experience, and listing characteristics — the only systematic difference is the badge. This makes the cutoff a source of quasi-random variation.</p>
-<p><strong>Why not alternatives:</strong><br />
-- <strong>PSM:</strong> Can match on observables, but doesn't exploit the quasi-random assignment at the threshold. Superhosts differ from non-Superhosts on many unobservables.<br />
-- <strong>DiD:</strong> No clear before/after event for a cross-sectional analysis of threshold effects.<br />
+<p><strong>Why not alternatives:</strong>
+- <strong>PSM:</strong> Can match on observables, but doesn't exploit the quasi-random assignment at the threshold. Superhosts differ from non-Superhosts on many unobservables.
+- <strong>DiD:</strong> No clear before/after event for a cross-sectional analysis of threshold effects.
 - <strong>IV:</strong> Could work if you had an instrument for Superhost status, but the threshold itself is more direct and transparent.</p>
 <hr />
-<h3>Use Case 2: Xbox — Achievement Rewards Threshold</h3>
+<h3 id="use-case-2-xbox-achievement-rewards-threshold">Use Case 2: Xbox — Achievement Rewards Threshold</h3>
 <table>
 <thead>
 <tr>
@@ -94,11 +98,11 @@ hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
 </tbody>
 </table>
 <p><strong>Why RDD:</strong> The rewards tier is unlocked at exactly 10,000 Gamerscore points. Players at 9,950 vs 10,050 points have similar gaming histories and engagement patterns. The threshold creates a clean discontinuity in treatment assignment.</p>
-<p><strong>Why not alternatives:</strong><br />
-- <strong>PSM:</strong> Doesn't leverage the quasi-experimental variation at the threshold — high-Gamerscore players are systematically different from low-Gamerscore players.<br />
+<p><strong>Why not alternatives:</strong>
+- <strong>PSM:</strong> Doesn't leverage the quasi-experimental variation at the threshold — high-Gamerscore players are systematically different from low-Gamerscore players.
 - <strong>DiD:</strong> Could complement RDD if the rewards tier was introduced at a specific time, but the primary identification comes from the score threshold.</p>
 <hr />
-<h3>Use Case 3: Uber — Driver Rating Deactivation Threshold</h3>
+<h3 id="use-case-3-uber-driver-rating-deactivation-threshold">Use Case 3: Uber — Driver Rating Deactivation Threshold</h3>
 <table>
 <thead>
 <tr>
@@ -126,11 +130,11 @@ hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
 </tbody>
 </table>
 <p><strong>Why RDD:</strong> Uber sends deactivation warnings to drivers whose average rating falls below 4.6. Drivers at 4.58 vs 4.62 are comparable in driving quality and experience, but only those below the cutoff receive the warning. This allows estimation of how warnings affect driver behavior.</p>
-<p><strong>Why not alternatives:</strong><br />
-- <strong>PSM:</strong> Cannot account for the unobserved motivation/quality differences that drive ratings.<br />
+<p><strong>Why not alternatives:</strong>
+- <strong>PSM:</strong> Cannot account for the unobserved motivation/quality differences that drive ratings.
 - <strong>DiD:</strong> The warning is ongoing (not a single policy change), making a clean pre/post comparison difficult.</p>
 <hr />
-<h3>Use Case 4: Netflix — "Top 10" List Threshold</h3>
+<h3 id="use-case-4-netflix-top-10-list-threshold">Use Case 4: Netflix — "Top 10" List Threshold</h3>
 <table>
 <thead>
 <tr>
@@ -158,12 +162,12 @@ hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
 </tbody>
 </table>
 <p><strong>Why RDD:</strong> Only the top 10 titles are displayed in the prominent "Top 10" list. The title ranked 10th vs 11th have nearly identical underlying viewership, but rank 10 gets massive homepage visibility while rank 11 does not. This discontinuity in exposure enables causal estimation of the promotional effect.</p>
-<p><strong>Why not alternatives:</strong><br />
-- <strong>PSM:</strong> Viewership is endogenous — titles in the Top 10 are popular for many unobservable reasons.<br />
-- <strong>DiD:</strong> The Top 10 list changes daily, so there's no clean policy shock to exploit.<br />
+<p><strong>Why not alternatives:</strong>
+- <strong>PSM:</strong> Viewership is endogenous — titles in the Top 10 are popular for many unobservable reasons.
+- <strong>DiD:</strong> The Top 10 list changes daily, so there's no clean policy shock to exploit.
 - <strong>IV:</strong> Hard to find a valid instrument for Top 10 appearance that doesn't also affect viewership directly.</p>
 <hr />
-<h2>Key Assumptions</h2>
+<h2 id="key-assumptions">Key Assumptions</h2>
 <ol>
 <li>
 <p><strong>Continuity:</strong> The potential outcomes (what would happen with and without treatment) are continuous functions of the running variable at the cutoff. There is no other discontinuity at the threshold.</p>
@@ -179,7 +183,7 @@ hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
 </li>
 </ol>
 <hr />
-<h2>Sharp vs Fuzzy RDD</h2>
+<h2 id="sharp-vs-fuzzy-rdd">Sharp vs Fuzzy RDD</h2>
 <table>
 <thead>
 <tr>
@@ -211,46 +215,52 @@ hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
 </tr>
 </tbody>
 </table>
-<p><strong>Fuzzy RDD as IV:</strong> In fuzzy designs, crossing the cutoff doesn't guarantee treatment but increases its probability. The cutoff indicator serves as an instrument:<br />
-- <strong>First stage:</strong> Being above the cutoff increases probability of treatment<br />
-- <strong>Reduced form:</strong> Being above the cutoff affects outcomes<br />
+<p><strong>Fuzzy RDD as IV:</strong> In fuzzy designs, crossing the cutoff doesn't guarantee treatment but increases its probability. The cutoff indicator serves as an instrument:
+- <strong>First stage:</strong> Being above the cutoff increases probability of treatment
+- <strong>Reduced form:</strong> Being above the cutoff affects outcomes
 - <strong>IV estimate:</strong> Ratio of reduced form to first stage = LATE for compliers at the cutoff</p>
 <hr />
-<h2>Real-World Challenges and Practical Realities</h2>
-<h3>Challenge 1: Manipulation at the Cutoff</h3>
+<h2 id="real-world-challenges-and-practical-realities">Real-World Challenges and Practical Realities</h2>
+<h3 id="challenge-1-manipulation-at-the-cutoff">Challenge 1: Manipulation at the Cutoff</h3>
 <p>If people can control their running variable to be just above the threshold, the as-if-random assignment assumption breaks down. At Airbnb, hosts near 4.8 stars might ask friends for reviews to push above the Superhost threshold. At Uber, drivers near the deactivation cutoff might select only easy rides. This "bunching" above the cutoff invalidates RDD.</p>
 <p><strong>What actually happens</strong>: The team runs a McCrary density test and finds a small bump above the cutoff. Is it statistically significant? Maybe borderline. The team then argues about whether "mild bunching" is a problem or noise. In some cases, manipulation is obvious (academic grade cutoffs where teachers round up) but in many business settings it's ambiguous.</p>
-<h3>Challenge 2: Local Treatment Effect Only</h3>
+<h3 id="challenge-2-local-treatment-effect-only">Challenge 2: Local Treatment Effect Only</h3>
 <p>RDD estimates the effect ONLY at the cutoff. At Airbnb, the Superhost effect applies to hosts near 4.8 stars, not to hosts at 3.5 or 4.95. If the PM asks "what would happen if we lowered the threshold to 4.5?", RDD at 4.8 doesn't answer this -- the effect could be completely different at 4.5.</p>
 <p><strong>What actually happens</strong>: The team presents "Superhost status increases bookings by 3 per month" and the PM immediately asks "can we extrapolate this to ALL hosts?" The answer is "no, this is a local estimate" -- which limits its usefulness for policy decisions that affect the entire host population.</p>
-<h3>Challenge 3: Bandwidth Selection Is Subjective</h3>
+<h3 id="challenge-3-bandwidth-selection-is-subjective">Challenge 3: Bandwidth Selection Is Subjective</h3>
 <p>Too narrow a bandwidth gives high variance (few observations). Too wide introduces bias (units far from the cutoff are less comparable). The optimal bandwidth depends on unknown quantities. Different bandwidth selection methods (IK, CCT) can give different answers.</p>
 <p><strong>What actually happens</strong>: The team presents results with the "optimal" bandwidth, and a reviewer says "what if you use half that bandwidth?" The estimate changes by 40%. The team then shows a bandwidth sensitivity plot, which reveals that the estimate is unstable. This is an honest finding but makes the result less convincing.</p>
-<h3>Challenge 4: Discrete Running Variables</h3>
+<h3 id="challenge-4-discrete-running-variables">Challenge 4: Discrete Running Variables</h3>
 <p>Many real running variables aren't truly continuous. Airbnb ratings have granularity (4.78, 4.79, 4.80...). If the running variable has few distinct values near the cutoff, the "local" comparison has very few data points. Uber driver ratings rounded to one decimal place create even coarser bins.</p>
 <p><strong>What actually happens</strong>: With only 200 observations within 0.1 stars of the cutoff, the local linear regression has very little power. The CI is so wide that the result is uninformative. The team either has to use a wider bandwidth (more bias) or report an imprecise result.</p>
-<h3>Challenge 5: Fuzzy RDD Complications</h3>
+<h3 id="challenge-5-fuzzy-rdd-complications">Challenge 5: Fuzzy RDD Complications</h3>
 <p>In practice, cutoffs are rarely perfectly enforced. At Uber, some drivers below 4.6 get deactivated and some above 4.6 don't (human review process). This requires Fuzzy RDD, which is essentially IV at the cutoff. All the problems of IV (weak first stage, LATE interpretation) now apply.</p>
 <p><strong>What actually happens</strong>: The first-stage "jump" in treatment probability at the cutoff is only 30% (from 10% deactivation below to 40% above). The Fuzzy RDD estimate inherits all the noise and LATE issues of IV, with an even smaller effective sample size.</p>
 <hr />
-<h2>FAANG Interview Follow-Up Questions</h2>
-<h3>Q1: "You found a +3 booking effect at the Superhost threshold. Can we conclude that Superhost status is worth +3 bookings for all hosts?"</h3>
-<p><strong>What they're testing</strong>: Do you understand the local nature of RDD?<br />
+<h2 id="faang-interview-follow-up-questions">FAANG Interview Follow-Up Questions</h2>
+<h3 id="q1-you-found-a-3-booking-effect-at-the-superhost-threshold-can-we-conclude-that-superhost-status-is-worth-3-bookings-for-all-hosts">Q1: "You found a +3 booking effect at the Superhost threshold. Can we conclude that Superhost status is worth +3 bookings for all hosts?"</h3>
+<p><strong>What they're testing</strong>: Do you understand the local nature of RDD?
 <strong>Strong answer</strong>: "No -- the estimate is LOCAL to hosts near 4.8 stars. It tells us the effect of crossing the threshold for borderline hosts. Hosts at 4.2 stars are very different -- even if we could magically give them Superhost status, the effect might be different (probably larger, because the badge is more surprising relative to their actual quality). For policy decisions affecting all hosts, I'd need to combine RDD with other evidence: maybe HTE analysis from experiments or PSM at different quality levels."</p>
-<h3>Q2: "The McCrary test shows a p-value of 0.08 for bunching above the cutoff. Do you proceed?"</h3>
-<p><strong>What they're testing</strong>: How do you handle ambiguous evidence of manipulation?<br />
+<h3 id="q2-the-mccrary-test-shows-a-p-value-of-008-for-bunching-above-the-cutoff-do-you-proceed">Q2: "The McCrary test shows a p-value of 0.08 for bunching above the cutoff. Do you proceed?"</h3>
+<p><strong>What they're testing</strong>: How do you handle ambiguous evidence of manipulation?
 <strong>Strong answer</strong>: "p = 0.08 is borderline. I'd investigate further: (1) plot the density histogram with small bins -- is the bunching visually obvious or subtle? (2) check if the bunching could be explained by natural rounding (e.g., hosts at 4.795 get rounded to 4.8), (3) test whether covariates (tenure, location) jump at the cutoff -- if they do, sorting is likely, (4) use a 'donut hole' approach: exclude observations very close to the cutoff (e.g., within 0.02) and re-estimate. If the effect persists, it's more robust to manipulation. I'd report all of this transparently."</p>
-<h3>Q3: "Why not just run a regression of bookings on Superhost status with controls, instead of RDD?"</h3>
-<p><strong>What they're testing</strong>: Do you understand selection bias vs. local randomization?<br />
+<h3 id="q3-why-not-just-run-a-regression-of-bookings-on-superhost-status-with-controls-instead-of-rdd">Q3: "Why not just run a regression of bookings on Superhost status with controls, instead of RDD?"</h3>
+<p><strong>What they're testing</strong>: Do you understand selection bias vs. local randomization?
 <strong>Strong answer</strong>: "OLS with controls gives a biased estimate because Superhosts are fundamentally better hosts -- they have higher response rates, cleaner listings, more experience. No amount of controls captures everything. RDD exploits the fact that hosts at 4.79 and 4.81 are essentially identical in quality -- the tiny difference that puts one above the threshold and one below is as-if random. This local comparison eliminates selection bias without needing to measure every confounder. The trade-off is that OLS uses the full sample (more power, more bias) while RDD uses only the local sample (less power, less bias)."</p>
-<h3>Q4: "Your optimal bandwidth is 0.15 (4.65 to 4.95). That includes hosts from 4.65 who might be very different from hosts at 4.80. Isn't that too wide?"</h3>
-<p><strong>What they're testing</strong>: Do you understand the bias-variance trade-off in bandwidth?<br />
+<h3 id="q4-your-optimal-bandwidth-is-015-465-to-495-that-includes-hosts-from-465-who-might-be-very-different-from-hosts-at-480-isnt-that-too-wide">Q4: "Your optimal bandwidth is 0.15 (4.65 to 4.95). That includes hosts from 4.65 who might be very different from hosts at 4.80. Isn't that too wide?"</h3>
+<p><strong>What they're testing</strong>: Do you understand the bias-variance trade-off in bandwidth?
 <strong>Strong answer</strong>: "Yes, wider bandwidths introduce bias because farther-away units are less comparable. But narrower bandwidths increase variance because fewer observations are used. The optimal bandwidth (e.g., from Imbens-Kalyanaraman or Calonico-Cattaneo-Titiunik) balances these. I'd address this by: (1) using a local LINEAR regression (not just comparing means), which models the relationship between score and outcome on each side, reducing bias, (2) using a triangular kernel that downweights observations far from the cutoff, (3) showing results across bandwidths [0.05, 0.10, 0.15, 0.20, 0.25] -- if the estimate is stable, the bandwidth choice isn't driving the result."</p>
-<h3>Q5: "A colleague suggests using Superhost status as an A/B test -- randomly assign the badge to some eligible hosts and not others. Why is this better than RDD?"</h3>
-<p><strong>What they're testing</strong>: Do you understand the hierarchy of causal methods?<br />
+<h3 id="q5-a-colleague-suggests-using-superhost-status-as-an-ab-test-randomly-assign-the-badge-to-some-eligible-hosts-and-not-others-why-is-this-better-than-rdd">Q5: "A colleague suggests using Superhost status as an A/B test -- randomly assign the badge to some eligible hosts and not others. Why is this better than RDD?"</h3>
+<p><strong>What they're testing</strong>: Do you understand the hierarchy of causal methods?
 <strong>Strong answer</strong>: "It's better in every way: (1) estimates the ATE, not just the local effect at the cutoff, (2) eliminates all confounding by construction, (3) higher statistical power because it uses the full experimental sample, (4) cleaner interpretation. The only downsides are practical: (1) ethical concerns about withholding a 'earned' badge from qualified hosts, (2) implementation cost, (3) potential host backlash. RDD is what we use when we CAN'T experiment. If we can, we should absolutely prefer the experiment."</p>
-<h3>Q6: "Imagine the Superhost threshold was changed from 4.8 to 4.7 a year ago. How would you use BOTH cutoffs?"</h3>
-<p><strong>What they're testing</strong>: Can you extend RDD to richer settings?<br />
+<h3 id="q6-imagine-the-superhost-threshold-was-changed-from-48-to-47-a-year-ago-how-would-you-use-both-cutoffs">Q6: "Imagine the Superhost threshold was changed from 4.8 to 4.7 a year ago. How would you use BOTH cutoffs?"</h3>
+<p><strong>What they're testing</strong>: Can you extend RDD to richer settings?
 <strong>Strong answer</strong>: "This is a powerful setup. I can: (1) estimate RDD effects at BOTH cutoffs (4.7 and 4.8) to see if the Superhost effect differs at different quality levels, (2) use hosts who were Superhosts under the old threshold (4.8) but not the new (4.7) as a 'difference-in-discontinuities' design -- they lost Superhost status not because of their behavior but because the threshold moved, (3) the threshold CHANGE is essentially a natural experiment: before vs. after the change for hosts between 4.7 and 4.8. This combines RDD with DiD for a stronger identification strategy."</p>
+
+    </article>
+    <footer class="doc-footer">
+      Rendered from Markdown — <a href="https://github.com/anuragreddygv323/causal_inference">causal_inference</a>
+    </footer>
+  </div>
 </body>
 </html>

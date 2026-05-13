@@ -1,106 +1,116 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>04-interrupted-time-series — README</title>
-<style>
-body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.55;max-width:52rem;margin:2rem auto;padding:0 1.25rem;color:#1a1a1a;}
-h1,h2,h3,h4{border-bottom:1px solid #eee;padding-bottom:.2em;margin-top:1.4em;}
-code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em;}
-pre{background:#f6f8fa;padding:1rem;border-radius:8px;overflow-x:auto;border:1px solid #e1e4e8;}
-table{border-collapse:collapse;width:100%;margin:1rem 0;font-size:.95em;}
-th,td{border:1px solid #ddd;padding:.45rem .6rem;text-align:left;}
-th{background:#f0f0f0;}
-blockquote{border-left:4px solid #ccc;margin:1rem 0;padding-left:1rem;color:#444;}
-a{color:#0969da;}
-hr{border:none;border-top:1px solid #ddd;margin:2rem 0;}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#080c14">
+  <title>Interrupted Time Series (ITS)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/notes-theme.css">
+  <link rel="stylesheet" href="../../assets/pygments-monokai.css">
 </head>
 <body>
-<h1>Interrupted Time Series (ITS)</h1>
-<h2>What It Is and When to Use It</h2>
+  <div class="doc-shell">
+    <header class="doc-header">
+      <div class="doc-header-inner">
+        <p class="doc-kicker">Method 04</p>
+        <h1 class="doc-title">Interrupted Time Series (ITS)</h1>
+        <p class="doc-subtitle">When to use it, assumptions, checks, and alternatives.</p>
+        <div class="doc-meta"><span class="doc-pill">Companion notebooks in repo</span></div>
+      </div>
+    </header>
+    <article class="content">
+<h2 id="what-it-is-and-when-to-use-it">What It Is and When to Use It</h2>
 <p>Estimates causal effects from a single unit's time series data with a known intervention point. Models the pre-intervention trend and checks for level and slope changes after the intervention using segmented regression.</p>
-<p><strong>Use when</strong>: Single unit (entire platform, one store, one country), many time points before and after intervention, clear intervention date, no control group available.<br />
+<p><strong>Use when</strong>: Single unit (entire platform, one store, one country), many time points before and after intervention, clear intervention date, no control group available.
 <strong>Do NOT use when</strong>: You have a control group (use DiD), multiple donor units (use SC), or very few time points.</p>
-<h2>Industry Use Cases</h2>
-<h3>Use Case 1: Uber — Platform-Wide Marketing Campaign Impact</h3>
+<h2 id="industry-use-cases">Industry Use Cases</h2>
+<h3 id="use-case-1-uber-platform-wide-marketing-campaign-impact">Use Case 1: Uber — Platform-Wide Marketing Campaign Impact</h3>
 <ul>
 <li><strong>Business question</strong>: Did a major TV+digital marketing campaign increase daily ride revenue?</li>
 <li><strong>Outcome</strong>: Daily platform revenue</li>
 <li><strong>Why ITS</strong>: Campaign was platform-wide (no control group), have 180+ days of daily data, clear campaign start date</li>
 <li><strong>Alternatives</strong>: DiD ruled out (no control — campaign affects all markets). SC ruled out (single platform, no donor pool). PSM not applicable (no user-level treatment assignment).</li>
 </ul>
-<h3>Use Case 2: Netflix — Price Increase Impact on Subscriber Churn</h3>
+<h3 id="use-case-2-netflix-price-increase-impact-on-subscriber-churn">Use Case 2: Netflix — Price Increase Impact on Subscriber Churn</h3>
 <ul>
 <li><strong>Business question</strong>: Did a subscription price increase cause a spike in cancellations?</li>
 <li><strong>Outcome</strong>: Daily cancellation rate</li>
 <li><strong>Why ITS</strong>: Price increase was universal (all subscribers affected simultaneously), long daily cancellation history available</li>
 <li><strong>Alternatives</strong>: DiD (no control group — everyone faces the new price). SC (single platform, no donor).</li>
 </ul>
-<h3>Use Case 3: Xbox — Console Launch Impact on Game Sales</h3>
+<h3 id="use-case-3-xbox-console-launch-impact-on-game-sales">Use Case 3: Xbox — Console Launch Impact on Game Sales</h3>
 <ul>
 <li><strong>Business question</strong>: Did the Xbox Series X launch date cause a structural increase in digital game sales?</li>
 <li><strong>Outcome</strong>: Weekly digital game sales revenue</li>
 <li><strong>Why ITS</strong>: Platform-wide event, clear launch date, long sales history available</li>
 <li><strong>Alternatives</strong>: DiD (no untreated platform exists). SC (no donor pool of comparable platforms).</li>
 </ul>
-<h3>Use Case 4: Airbnb — COVID Lockdown Impact on Bookings</h3>
+<h3 id="use-case-4-airbnb-covid-lockdown-impact-on-bookings">Use Case 4: Airbnb — COVID Lockdown Impact on Bookings</h3>
 <ul>
 <li><strong>Business question</strong>: What was the immediate and trend impact of COVID lockdowns on Airbnb bookings?</li>
 <li><strong>Outcome</strong>: Daily booking volume</li>
 <li><strong>Why ITS</strong>: Universal shock affecting all markets, no "control" for COVID, massive time series available</li>
 <li><strong>Alternatives</strong>: SC (could use other travel platforms but data access is limited). DiD (no control group unaffected by lockdowns).</li>
 </ul>
-<h2>Key Assumptions</h2>
+<h2 id="key-assumptions">Key Assumptions</h2>
 <ul>
 <li><strong>Linearity of pre-trend</strong>: The pre-intervention trend is well-approximated by the specified functional form (usually linear)</li>
 <li><strong>No co-occurring events</strong>: Nothing else changed at the intervention point that could explain the outcome shift</li>
 <li><strong>Stable composition</strong>: The population/unit generating the time series doesn't fundamentally change at the intervention</li>
 <li><strong>Sufficient pre/post data</strong>: Enough time points on both sides to estimate trends reliably (rule of thumb: ≥30 per segment)</li>
 </ul>
-<h2>Connection to Other Methods</h2>
+<h2 id="connection-to-other-methods">Connection to Other Methods</h2>
 <ul>
 <li>ITS is a special case of DiD with one unit and time as the comparison dimension</li>
 <li>Controlled ITS (CITS) adds a comparison group, bridging ITS and DiD</li>
 <li>When donor units exist, Synthetic Control provides a data-driven counterfactual instead of extrapolating the pre-trend</li>
 <li>Bayesian Structural Time Series (CausalImpact) extends ITS with probabilistic counterfactuals and covariates</li>
 </ul>
-<h2>Real-World Challenges and Practical Realities</h2>
-<h3>Challenge 1: Co-Occurring Events (The Biggest Threat)</h3>
+<h2 id="real-world-challenges-and-practical-realities">Real-World Challenges and Practical Realities</h2>
+<h3 id="challenge-1-co-occurring-events-the-biggest-threat">Challenge 1: Co-Occurring Events (The Biggest Threat)</h3>
 <p>ITS assumes nothing else changed at the intervention point. In reality, things are always changing. At Uber, a marketing campaign might coincide with a competitor's outage, a holiday weekend, or a regulatory change. At Netflix, a price increase might coincide with a major content release. Disentangling these effects is nearly impossible with a single time series.</p>
 <p><strong>What actually happens</strong>: The team presents ITS results showing a revenue bump. A stakeholder says "wasn't that the same week our competitor went down for 2 days?" -- and the analysis becomes inconclusive. Teams learn to maintain a detailed "event log" of everything happening around the intervention, but it's never complete.</p>
-<h3>Challenge 2: Functional Form Sensitivity</h3>
+<h3 id="challenge-2-functional-form-sensitivity">Challenge 2: Functional Form Sensitivity</h3>
 <p>ITS extrapolates the pre-trend forward. If you model the pre-trend as linear but it was actually quadratic (or plateauing), the counterfactual is wrong. At Xbox, digital game sales might follow an S-curve that looks linear in a short window but saturates over longer periods.</p>
 <p><strong>What actually happens</strong>: The team fits a linear pre-trend and finds a level shift. A colleague re-runs with a quadratic pre-trend and the effect shrinks by 50%. Which model is "right"? This is a judgment call, and both are defensible.</p>
-<h3>Challenge 3: Seasonality and Calendar Effects</h3>
+<h3 id="challenge-3-seasonality-and-calendar-effects">Challenge 3: Seasonality and Calendar Effects</h3>
 <p>Daily or weekly data has strong seasonality (weekends, holidays, pay cycles). If the intervention happens near a seasonal shift (e.g., a campaign launches right before Black Friday), the ITS estimate conflates the intervention effect with seasonality.</p>
 <p><strong>What actually happens</strong>: The team adds day-of-week and month fixed effects, which helps, but holidays and one-off events don't fit neatly into fixed-effect structures. Residual seasonality can still bias the estimate.</p>
-<h3>Challenge 4: Autocorrelation Makes Standard Errors Wrong</h3>
+<h3 id="challenge-4-autocorrelation-makes-standard-errors-wrong">Challenge 4: Autocorrelation Makes Standard Errors Wrong</h3>
 <p>Time series data is autocorrelated by definition -- today's revenue depends on yesterday's. Standard OLS errors dramatically understate uncertainty. Many published ITS analyses use naive standard errors and report spuriously significant results.</p>
 <p><strong>What actually happens</strong>: The team uses Newey-West (HAC) errors, which are wider but more honest. The effect that was "significant at p &lt; 0.001" with OLS errors becomes "p = 0.08" with HAC errors. The PM is disappointed.</p>
-<h3>Challenge 5: Short Pre-Period or Post-Period</h3>
+<h3 id="challenge-5-short-pre-period-or-post-period">Challenge 5: Short Pre-Period or Post-Period</h3>
 <p>ITS needs many observations on both sides. But business moves fast -- a PM wants results 2 weeks after a campaign launch. With 14 post-intervention days and perhaps strong day-to-day noise, there's very little power to detect anything other than huge effects.</p>
 <p><strong>What actually happens</strong>: The team says "we need 60+ days of post-data for a reliable estimate" and the PM says "the budget review is in 3 weeks." The team produces preliminary results with wide confidence intervals and everyone is frustrated.</p>
 <hr />
-<h2>FAANG Interview Follow-Up Questions</h2>
-<h3>Q1: "Your ITS shows a level shift of +$15K/day. But your pre-treatment trend was already increasing by $500/day. How do you separate the trend from the intervention effect?"</h3>
-<p><strong>What they're testing</strong>: Do you understand the segmented regression decomposition?<br />
+<h2 id="faang-interview-follow-up-questions">FAANG Interview Follow-Up Questions</h2>
+<h3 id="q1-your-its-shows-a-level-shift-of-15kday-but-your-pre-treatment-trend-was-already-increasing-by-500day-how-do-you-separate-the-trend-from-the-intervention-effect">Q1: "Your ITS shows a level shift of +$15K/day. But your pre-treatment trend was already increasing by $500/day. How do you separate the trend from the intervention effect?"</h3>
+<p><strong>What they're testing</strong>: Do you understand the segmented regression decomposition?
 <strong>Strong answer</strong>: "The segmented regression separates these explicitly. The pre-treatment trend (beta_1) captures the existing $500/day growth. The level shift (beta_2 = $15K) captures the IMMEDIATE jump at the intervention, controlling for the pre-trend. The slope change (beta_3) captures any change in the GROWTH RATE after intervention. The counterfactual is the pre-trend extrapolated forward. The $15K is the gap between actual revenue and where the pre-trend would have taken us -- it's already adjusted for the existing trend."</p>
-<h3>Q2: "A major competitor had an outage the same week as your campaign launched. How does this affect your analysis?"</h3>
-<p><strong>What they're testing</strong>: Do you recognize the fundamental limitation of single-unit ITS?<br />
+<h3 id="q2-a-major-competitor-had-an-outage-the-same-week-as-your-campaign-launched-how-does-this-affect-your-analysis">Q2: "A major competitor had an outage the same week as your campaign launched. How does this affect your analysis?"</h3>
+<p><strong>What they're testing</strong>: Do you recognize the fundamental limitation of single-unit ITS?
 <strong>Strong answer</strong>: "This is the biggest weakness of ITS -- co-occurring events cannot be disentangled. The level shift now captures BOTH our campaign AND the competitor outage. I'd try: (1) check if the competitor's outage was resolved quickly -- if so, the effect should decay while our campaign effect persists, (2) use a 'controlled ITS' if we have a comparable metric unaffected by our campaign to check if the competitor outage explains the bump, (3) look at the slope change -- our campaign should affect the slope (sustained growth) while a one-time outage shouldn't, (4) be transparent: 'The immediate level shift is confounded. The sustained slope change is more likely attributable to our campaign.' If I had a control group, I'd switch to DiD."</p>
-<h3>Q3: "You're using Newey-West standard errors with 7 lags. Why 7? What happens if you use 14?"</h3>
-<p><strong>What they're testing</strong>: Do you understand lag selection in HAC estimation?<br />
+<h3 id="q3-youre-using-newey-west-standard-errors-with-7-lags-why-7-what-happens-if-you-use-14">Q3: "You're using Newey-West standard errors with 7 lags. Why 7? What happens if you use 14?"</h3>
+<p><strong>What they're testing</strong>: Do you understand lag selection in HAC estimation?
 <strong>Strong answer</strong>: "7 lags corresponds to one week -- reasonable for daily data since weekly seasonality creates autocorrelation up to 7 days. If I use 14, the standard errors get wider (more conservative) because I'm allowing for longer-range dependence. The standard guidance is ceil(0.75 * T^(1/3)) for automatic selection, but domain knowledge matters: if my data has monthly cycles, I might need 30 lags. I'd report results with multiple lag choices as a sensitivity check. If conclusions change dramatically with lag choice, the result is fragile."</p>
-<h3>Q4: "Can you use ITS if the intervention was gradual (phased rollout over 4 weeks) rather than instant?"</h3>
-<p><strong>What they're testing</strong>: Do you understand the sharp vs. gradual intervention distinction?<br />
+<h3 id="q4-can-you-use-its-if-the-intervention-was-gradual-phased-rollout-over-4-weeks-rather-than-instant">Q4: "Can you use ITS if the intervention was gradual (phased rollout over 4 weeks) rather than instant?"</h3>
+<p><strong>What they're testing</strong>: Do you understand the sharp vs. gradual intervention distinction?
 <strong>Strong answer</strong>: "A gradual intervention violates the 'clean break' assumption of standard ITS. Options: (1) define the intervention as the START of the rollout and accept that the estimated level shift captures only the initial impact, (2) model the rollout phase explicitly -- e.g., add a 'ramp-up' variable that goes from 0 to 1 over the 4-week rollout period, (3) use the full rollout completion as the intervention date and exclude the ramp-up period from both pre and post windows. The right choice depends on the business question: 'what was the effect of starting the campaign' vs. 'what was the effect once fully deployed.'"</p>
-<h3>Q5: "Your pre-treatment period has 180 days but includes Black Friday and Christmas. How do you handle this?"</h3>
-<p><strong>What they're testing</strong>: Can you deal with real-world messy time series?<br />
+<h3 id="q5-your-pre-treatment-period-has-180-days-but-includes-black-friday-and-christmas-how-do-you-handle-this">Q5: "Your pre-treatment period has 180 days but includes Black Friday and Christmas. How do you handle this?"</h3>
+<p><strong>What they're testing</strong>: Can you deal with real-world messy time series?
 <strong>Strong answer</strong>: "Holiday effects create outliers that distort the pre-trend estimation. I'd: (1) add holiday indicators as covariates in the regression, (2) check whether the intervention date is near a holiday (if so, the holiday effect confounds the intervention), (3) consider using a robust regression (iteratively reweighted least squares) that downweights outliers, (4) alternatively, model with ARIMA + intervention terms, which handles seasonal patterns more flexibly. The key is that any seasonal pattern in the pre-period that isn't modeled will show up as part of the counterfactual -- so holiday spikes in the pre-trend get extrapolated forward, potentially making the post-intervention period look artificially low."</p>
-<h3>Q6: "The PM asks you to estimate the ROI of the marketing campaign using your ITS results. How do you go from 'level shift of +$15K/day' to ROI?"</h3>
-<p><strong>What they're testing</strong>: Can you translate causal estimates into business metrics?<br />
+<h3 id="q6-the-pm-asks-you-to-estimate-the-roi-of-the-marketing-campaign-using-your-its-results-how-do-you-go-from-level-shift-of-15kday-to-roi">Q6: "The PM asks you to estimate the ROI of the marketing campaign using your ITS results. How do you go from 'level shift of +$15K/day' to ROI?"</h3>
+<p><strong>What they're testing</strong>: Can you translate causal estimates into business metrics?
 <strong>Strong answer</strong>: "Cumulative incremental revenue = (level shift x days) + (slope change x days^2 / 2) over the relevant period. If the campaign ran for 60 days post-launch: incremental revenue ≈ $15K x 60 + $200 x 60^2 / 2 = $1.26M. ROI = incremental revenue / campaign cost. But I'd add caveats: (1) the estimate has a confidence interval -- I'd report the CI on ROI too, (2) I'd check for effect decay (maybe the $15K/day declines over time -- the event study version of ITS would show this), (3) I'd distinguish between revenue shift (pulling forward future purchases) and true incremental revenue, (4) there may be long-run effects not captured in the 60-day window."</p>
+
+    </article>
+    <footer class="doc-footer">
+      Rendered from Markdown — <a href="https://github.com/anuragreddygv323/causal_inference">causal_inference</a>
+    </footer>
+  </div>
 </body>
 </html>
